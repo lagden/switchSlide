@@ -1,0 +1,33 @@
+{
+  "name": "switch-slider",
+  "title": "Slide Switch",
+  "description": "It is a plugin that show radios buttons like slide switch",
+  "version": "0.0.1",
+  "author": "Thiago Lagden",
+  "keyword": [
+    "custom",
+    "drag",
+    "switch",
+    "radio"
+  ],
+  "main": [
+    "dist/switch.js",
+    "dist/switch.css"
+  ],
+  "ignore": [
+    "src",
+    "examples",
+    "dist/lib",
+    "package.json",
+    "Gulpfile.js",
+    "Gulpfile.coffee",
+    "README.md",
+    ".*"
+  ],
+  "dependencies": {
+    "gsap": "~1.13.2",
+    "get-style-property": "desandro/get-style-property#~1.0.3",
+    "eventEmitter": "~4.2.7",
+    "classie": "~1.0.1"
+  }
+}

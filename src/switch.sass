@@ -1,0 +1,34 @@
+.switchSlide
+    display: flex
+    flex-flow: row nowrap
+    justify-content: center
+
+    width: auto
+    position: relative
+
+    font-family: Consolas, 'Liberation Mono', Courier, monospace
+    color: rgb(67, 67, 67)
+
+
+    border-radius: 5px
+    background-color: rgb(228, 228, 228)
+
+    > input[type="radio"],
+    > label
+        z-index: 1
+        visibility: hidden
+        position: absolute
+
+    > .switchSlide__opt
+        text-align: center
+        background-color: red
+        box-sizing: content-box
+        // width: 150px
+        padding: 5px 10px
+
+
+    > .switchSlide__knob
+        position: absolute
+        top: 0
+        left: 0
+        background-color: rgba(255, 255, 255, 0.5)
