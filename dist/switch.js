@@ -12,11 +12,11 @@ var __hasProp = {}.hasOwnProperty,
 
 (function(root, factory) {
   if (typeof define === "function" && define.amd) {
-    define(['get-style-property/get-style-property', 'classie/classie', 'eventEmitter/EventEmitter', 'draggabilly/draggabilly'], factory);
+    define(['get-style-property/get-style-property', 'classie/classie', 'eventEmitter/EventEmitter', 'hammerjs/hammer'], factory);
   } else {
-    root.SwitchSlide = factory(root.getStyleProperty, root.classie, root.EventEmitter, root.Draggabilly);
+    root.SwitchSlide = factory(root.getStyleProperty, root.classie, root.EventEmitter, root.Hammer);
   }
-})(this, function(getStyleProperty, classie, EventEmitter, Draggabilly) {
+})(this, function(getStyleProperty, classie, EventEmitter, Hammer) {
   'use strict';
   var GUID, SwitchSlide, instances, transformProperty, _SPL;
   transformProperty = getStyleProperty('transform');
@@ -24,16 +24,71 @@ var __hasProp = {}.hasOwnProperty,
   instances = {};
   _SPL = {
     getTemplate: function() {
-      return ['<div class="switchSlide__opt switchSlide__opt--on"><span>{captionOn}</span></div>', '<div class="switchSlide__opt switchSlide__opt--off"><span>{captionOff}</span></div>', '<div class="switchSlide__knob"></div>'].join('');
+      return ['<div class="switchSlide__opt switchSlide__opt--on">', '<span>{captionOn}</span></div>', '<div class="switchSlide__opt switchSlide__opt--off">', '<span>{captionOff}</span></div>', '<div class="switchSlide__knob"></div>'].join('');
     },
-    onDragStart: function(draggieInstance, event, pointer) {
-      return classie.add(draggieInstance.element, 'is-dragging');
+    onToggle: function() {
+      var radio, _i, _len, _ref;
+      this.toggle();
+      this.emitEvent('toggle', this.eventToggleParam);
+      _ref = this.radios;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        radio = _ref[_i];
+        if (radio.checked) {
+          radio.dispatchEvent(this.eventChange);
+        }
+      }
     },
-    onDragEnd: function(draggieInstance, event, pointer) {
-      classie.remove(draggieInstance.element, 'is-dragging');
+    onStart: function(event) {
+      this.container.focus();
+      classie.add(this.knob, 'is-dragging');
+    },
+    onMove: function(event) {
+      var v;
+      v = (this.size / 2) + event.deltaX;
+      if (this.ligado !== null) {
+        v = this.ligado ? this.size + event.deltaX : event.deltaX;
+      }
+      this.transform.translate.x = Math.min(this.size, Math.max(v, 0));
+      this.updatePosition();
+    },
+    onEnd: function(event) {
+      this.ligado = Boolean(Math.abs(this.transform.translate.x > this.size / 2));
+      classie.remove(this.knob, 'is-dragging');
+      _SPL.onToggle.bind(this)();
+    },
+    onTap: function(event) {
+      var center, rect;
+      console.log('onTap', this.ligado);
+      rect = this.container.getBoundingClientRect();
+      center = rect.left + (rect.width / 2);
+      this.ligado = event.center.x > center;
+      _SPL.onToggle.bind(this)();
+    },
+    onKeydown: function(event) {
+      switch (event.keyCode) {
+        case this.keyCodes.space:
+          this.ligado = !this.ligado;
+          _SPL.onToggle.bind(this)();
+          break;
+        case this.keyCodes.right:
+          this.ligado = true;
+          _SPL.onToggle.bind(this)();
+          break;
+        case this.keyCodes.left:
+          this.ligado = false;
+          _SPL.onToggle.bind(this)();
+      }
+    },
+    checked: function(radio) {
+      radio.setAttribute('checked', '');
+      radio.checked = true;
+    },
+    unchecked: function(radio) {
+      radio.removeAttribute('checked');
+      radio.checked = false;
     },
     build: function() {
-      var captionOff, captionOn, content, labels, r, sizes;
+      var captionOff, captionOn, content, el, labels, pan, r, sizes, tap, _i, _len, _ref;
       captionOn = captionOff = '';
       labels = this.container.getElementsByTagName('label');
       if (labels.length === 2) {
@@ -50,23 +105,56 @@ var __hasProp = {}.hasOwnProperty,
         return r[b];
       });
       this.container.insertAdjacentHTML('afterbegin', content);
+      this.elements = [];
+      sizes = this.getSizes();
+      this.size = Math.max(sizes.sOn, sizes.sOff);
       this.sOn = this.container.querySelector('.switchSlide__opt--on');
       this.sOff = this.container.querySelector('.switchSlide__opt--off');
       this.knob = this.container.querySelector('.switchSlide__knob');
-      sizes = this.getSizes();
-      this.size = Math.max(sizes.sOn, sizes.sOff);
-      this.sOn.style.width = "" + this.size + "px";
-      this.sOff.style.width = "" + this.size + "px";
-      this.knob.style.width = "" + this.size + "px";
-      this.knob.style.height = "" + sizes.cHeight + "px";
+      this.elements.push(this.sOn);
+      this.elements.push(this.sOff);
+      this.elements.push(this.knob);
+      _ref = this.elements;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        el = _ref[_i];
+        el.style.width = "" + this.size + "px";
+      }
       this.container.style.width = (this.size * 2) + 'px';
-      this.containerWidth = this.size * 2;
-      this.draggie = new Draggabilly(this.knob, {
-        containment: this.container,
-        axis: 'x'
+      tap = new Hammer.Tap;
+      this.mc = new Hammer.Manager(this.container, {
+        dragLockToAxis: true,
+        dragBlockHorizontal: true,
+        preventDefault: true
       });
-      this.draggie.on('dragEnd', _SPL.onDragEnd.bind(this));
+      this.mc.add(tap);
+      this.mc.on('tap', _SPL.onTap.bind(this));
+      pan = new Hammer.Pan({
+        direction: Hammer.DIRECTION_HORIZONTAL
+      });
+      this.mk = new Hammer.Manager(this.knob, {
+        dragLockToAxis: true,
+        dragBlockHorizontal: true,
+        preventDefault: true
+      });
+      this.mk.add(pan);
+      this.mk.on('panstart', _SPL.onStart.bind(this));
+      this.mk.on('pan', _SPL.onMove.bind(this));
+      this.mk.on('panend', _SPL.onEnd.bind(this));
+      this.mk.on('pancancel', _SPL.onEnd.bind(this));
+      this.eventCall = {
+        'keydown': _SPL.onKeydown.bind(this)
+      };
+      this.container.addEventListener('keydown', this.eventCall.keydown);
+      this.eventToggleParam = [
+        {
+          'instance': this,
+          'container': this.container,
+          'radios': this.radios,
+          'value': this.valor
+        }
+      ];
       this.eventChange = new CustomEvent('change');
+      _SPL.onToggle.bind(this)();
     },
     initCheck: function(container) {
       var attrib, attribs, data, regex, _i, _len;
@@ -87,7 +175,7 @@ var __hasProp = {}.hasOwnProperty,
     __extends(SwitchSlide, _super);
 
     function SwitchSlide(container, required, labeledby) {
-      var id, idx, radio, radios, _i, _len;
+      var attrib, id, idx, radio, radios, value, _i, _len, _ref;
       if (false === (this instanceof SwitchSlide)) {
         return new SwitchSlide(container, required, labeledby);
       }
@@ -95,7 +183,7 @@ var __hasProp = {}.hasOwnProperty,
       required = required || false;
       if (_SPL.initCheck(container)) {
         console.warn('The component has been initialized.');
-        return null;
+        return;
       } else {
         id = ++GUID;
         this.container = container;
@@ -115,17 +203,19 @@ var __hasProp = {}.hasOwnProperty,
       }
       if (this.radios.length !== 2) {
         console.err('✖ No radios');
-        return null;
+        return;
       }
       this.template = _SPL.getTemplate();
       this.size = 0;
-      this.side = null;
+      this.ligado = null;
       if (this.radios[0].checked && !this.radios[1].checked) {
-        this.side = false;
+        this.ligado = false;
       }
       if (this.radios[1].checked && !this.radios[0].checked) {
-        this.side = true;
+        this.ligado = true;
       }
+      this.valor = null;
+      this.updateValor();
       this.active = false;
       this.transform = {
         translate: {
@@ -137,49 +227,62 @@ var __hasProp = {}.hasOwnProperty,
         'left': 37,
         'right': 39
       };
+      this.aria = {
+        'tabindex': 0,
+        'role': 'slider',
+        'aria-valuemin': this.radios[0].title,
+        'aria-valuemax': this.radios[1].title,
+        'aria-valuetext': null,
+        'aria-valuenow': null,
+        'aria-labeledby': labeledby,
+        'aria-required': required
+      };
+      _ref = this.aria;
+      for (attrib in _ref) {
+        value = _ref[attrib];
+        this.container.setAttribute(attrib, value);
+      }
       _SPL.build.bind(this)();
     }
 
     SwitchSlide.prototype.toggle = function(v) {
-      var radio, _i, _len, _ref;
-      this.side = v !== void 0 ? v : this.side;
-      if (this.side !== null) {
+      var a, b, radio, _i, _len, _ref;
+      v = v || false;
+      if (v !== false) {
+        this.ligado = v;
+      }
+      if (this.ligado !== null) {
         this.active = true;
-        this.transform.translate.x = this.side ? -this.size : 0;
-        if (this.side) {
-          this.radios[0].removeAttribute('checked');
-          this.radios[0].checked = false;
-          this.radios[1].setAttribute('checked', '');
-          this.radios[1].checked = true;
-        } else {
-          this.radios[1].removeAttribute('checked');
-          this.radios[1].checked = false;
-          this.radios[0].setAttribute('checked', '');
-          this.radios[0].checked = true;
-        }
+        this.transform.translate.x = this.ligado ? this.size : 0;
+        a = this.ligado ? 1 : 0;
+        b = a ^ 1;
+        _SPL.checked(this.radios[a]);
+        _SPL.unchecked(this.radios[b]);
       } else {
         this.active = false;
-        this.transform.translate.x = -this.size / 2;
+        this.transform.translate.x = this.size / 2;
         _ref = this.radios;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           radio = _ref[_i];
-          radio.removeAttribute('checked');
-          radio.checked = false;
+          _SPL.unchecked(radio);
         }
       }
-      this.ariaAttr();
-      this.captionsActive();
-      this.requestUpdate();
+      this.isActive();
+      this.updateAria();
+      this.updateValor();
+      this.updatePosition();
     };
 
     SwitchSlide.prototype.swap = function(v) {
-      v = v !== void 0 ? v : null;
-      this.side = v !== null ? !v : !this.side;
+      if (v != null) {
+        this.ligado = v;
+      }
+      this.ligado = !this.ligado;
       _SPL.onToggle.bind(this)();
     };
 
     SwitchSlide.prototype.reset = function() {
-      this.side = null;
+      this.ligado = null;
       _SPL.onToggle.bind(this)();
     };
 
@@ -195,63 +298,69 @@ var __hasProp = {}.hasOwnProperty,
       sOff = clone.querySelector(sOffSelector);
       sizes = {
         'sOn': sOn.clientWidth,
-        'sOff': sOff.clientWidth,
-        'cHeight': clone.clientHeight
+        'sOff': sOff.clientWidth
       };
       document.body.removeChild(clone);
       clone = null;
       return sizes;
     };
 
-    SwitchSlide.prototype.ariaAttr = function() {
-      var v;
-      if (this.side === null) {
-        v = this.side;
-      } else {
-        v = this.side ? this.radios[1].title : this.radios[0].title;
-      }
-      this.sFlex.setAttribute('aria-valuenow', v);
-      this.sFlex.setAttribute('aria-valuetext', v);
-    };
-
-    SwitchSlide.prototype.valorUpdate = function() {
-      var v;
-      if (this.side === null) {
-        v = this.side;
-      } else {
-        v = this.side ? this.radios[1].value : this.radios[0].value;
-      }
-      return v;
-    };
-
-    SwitchSlide.prototype.captionsActive = function() {
+    SwitchSlide.prototype.isActive = function() {
       var method;
       method = this.active ? 'add' : 'remove';
-      classie[method](this.sOn, 'is-active');
-      classie[method](this.sOff, 'is-active');
+      classie[method](this.knob, 'is-active');
     };
 
-    SwitchSlide.prototype.updateTransform = function() {
+    SwitchSlide.prototype.updateAria = function() {
+      var v;
+      if (this.ligado !== null) {
+        v = this.ligado === true ? this.radios[1].title : this.radios[0].title;
+        this.container.setAttribute('aria-valuenow', v);
+        this.container.setAttribute('aria-valuetext', v);
+      }
+    };
+
+    SwitchSlide.prototype.updateValor = function() {
+      this.valor = null;
+      if (this.ligado !== null) {
+        this.valor = this.ligado === true ? this.radios[1].value : this.radios[0].value;
+      }
+      if (this.eventToggleParam != null) {
+        this.eventToggleParam[0].value = this.valor;
+      }
+    };
+
+    SwitchSlide.prototype.updatePosition = function() {
       var value;
       value = ["translate3d(" + this.transform.translate.x + "px, 0, 0)"];
       this.knob.style[transformProperty] = value.join(" ");
     };
 
-    SwitchSlide.prototype.requestUpdate = function() {
-      if (this.ticking === false) {
-        this.ticking = true;
-        requestAnimationFrame(this.updateTransform.bind(this));
-      }
-    };
-
     SwitchSlide.prototype.destroy = function() {
-      var style;
-      style = this.container.style;
-      style.width = '';
-      this.container.removeChild(this.sFlex);
-      this.container.removeAttribute("data-sr" + this.container.srGUID);
-      delete this.container.srGUID;
-      this.sFlex = null;
+      var attr, el, radio, _i, _j, _len, _len1, _ref, _ref1;
+      if (this.container !== null) {
+        _ref = this.radios;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          radio = _ref[_i];
+          radio.removeAttribute('data-side');
+        }
+        _ref1 = this.elements;
+        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+          el = _ref1[_j];
+          this.container.removeChild(el);
+        }
+        for (attr in this.aria) {
+          this.container.removeAttribute(attr);
+        }
+        this.container.removeAttribute("class");
+        this.container.removeAttribute("style");
+        this.container.removeAttribute("data-sr" + this.container.srGUID);
+        this.container.removeEventListener('keydown', this.eventCall.keydown);
+        delete this.container.srGUID;
+        this.mk.destroy();
+        this.mc.destroy();
+        this.container = null;
+      }
     };
 
     return SwitchSlide;

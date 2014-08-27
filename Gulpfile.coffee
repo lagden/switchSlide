@@ -46,9 +46,7 @@ map =
       'dist/lib/get-style-property/get-style-property.js'
       'dist/lib/classie/classie.js'
       'dist/lib/eventEmitter/EventEmitter.js'
-      'dist/lib/eventie/eventie.js'
-      'dist/lib/get-size/get-size.js'
-      'dist/lib/draggabilly/draggabilly.js'
+      'dist/lib/hammerjs/hammer.js'
       'dist/switch.js'
     ]
     out:  'switch.pkg.js'

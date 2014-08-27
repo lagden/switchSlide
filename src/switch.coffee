@@ -13,15 +13,15 @@ It is a plugin that show `radios buttons` like slide switch
         'get-style-property/get-style-property'
         'classie/classie'
         'eventEmitter/EventEmitter'
-        'draggabilly/draggabilly'
+        'hammerjs/hammer'
       ], factory
   else
     root.SwitchSlide = factory root.getStyleProperty,
                                root.classie,
                                root.EventEmitter,
-                               root.Draggabilly
+                               root.Hammer
   return
-) @, (getStyleProperty, classie, EventEmitter, Draggabilly) ->
+) @, (getStyleProperty, classie, EventEmitter, Hammer) ->
 
   'use strict'
 
@@ -38,31 +38,75 @@ It is a plugin that show `radios buttons` like slide switch
     # Template
     getTemplate: ->
       [
-        '<div class="switchSlide__opt switchSlide__opt--on"><span>{captionOn}</span></div>'
-        '<div class="switchSlide__opt switchSlide__opt--off"><span>{captionOff}</span></div>'
+        '<div class="switchSlide__opt switchSlide__opt--on">'
+        '<span>{captionOn}</span></div>'
+        '<div class="switchSlide__opt switchSlide__opt--off">'
+        '<span>{captionOff}</span></div>'
         '<div class="switchSlide__knob"></div>'
       ].join ''
 
-    onDragStart: (draggieInstance, event, pointer) ->
+    # Event Handlers
+    onToggle: ->
+      @toggle()
+      @.emitEvent 'toggle', @eventToggleParam
+      for radio in @radios when radio.checked
+        radio.dispatchEvent @eventChange
+      return
 
+    onStart: (event) ->
+      @container.focus()
+      classie.add @knob, 'is-dragging'
+      return
 
-      classie.add draggieInstance.element, 'is-dragging'
-      # console.log draggieInstance
-      # pos = parseInt @knob.style[transformProperty].replace(/translate3d\(([\-0-9]+)px, 0px, 0px\)/gi, '$1'), 10
-      # pos += if isNaN(pos) then 0 else (@size / 2)
-      # final = if pos < @size then 0 else @size
-      # TM.to @knob, 0.3,
-      #   x: final
-      # return
+    onMove: (event) ->
+      v = (@size / 2) + event.deltaX
 
-    onDragEnd: (draggieInstance, event, pointer) ->
-      # console.log draggieInstance
-      classie.remove draggieInstance.element, 'is-dragging'
-      # pos = draggieInstance.position.x + (@size / 2)
-      # pos = draggieInstance.position.x
+      if @ligado isnt null
+        v = if @ligado then @size + event.deltaX else event.deltaX
 
-      # @transform.translate.x = if pos < @size then 0 else @size
-      # @updateTransform()
+      @transform.translate.x = Math.min @size, Math.max v, 0
+      @updatePosition()
+      return
+
+    onEnd: (event) ->
+      @ligado = Boolean Math.abs @transform.translate.x > @size / 2
+      classie.remove @knob, 'is-dragging'
+      _SPL.onToggle.bind(@)()
+      return
+
+    onTap: (event) ->
+      console.log 'onTap', @ligado
+
+      rect = @container.getBoundingClientRect()
+      center = rect.left + (rect.width / 2)
+      @ligado = event.center.x > center
+
+      _SPL.onToggle.bind(@)()
+      return
+
+    onKeydown: (event) ->
+      switch event.keyCode
+        when @keyCodes.space
+          @ligado = !@ligado
+          _SPL.onToggle.bind(@)()
+
+        when @keyCodes.right
+          @ligado = true
+          _SPL.onToggle.bind(@)()
+
+        when @keyCodes.left
+          @ligado = false
+          _SPL.onToggle.bind(@)()
+      return
+
+    checked: (radio) ->
+      radio.setAttribute 'checked', ''
+      radio.checked = true
+      return
+
+    unchecked: (radio) ->
+      radio.removeAttribute 'checked'
+      radio.checked = false
       return
 
     build: () ->
@@ -85,47 +129,71 @@ It is a plugin that show `radios buttons` like slide switch
 
       @container.insertAdjacentHTML 'afterbegin', content
 
-      # Size elements
+      # Elements and Size elements
+      @elements = []
+
+      sizes = @getSizes()
+      @size = Math.max sizes.sOn, sizes.sOff
+
       @sOn   = @container.querySelector '.switchSlide__opt--on'
       @sOff  = @container.querySelector '.switchSlide__opt--off'
       @knob  = @container.querySelector '.switchSlide__knob'
 
-      sizes = @getSizes()
+      @elements.push @sOn
+      @elements.push @sOff
+      @elements.push @knob
 
-      @size = Math.max sizes.sOn, sizes.sOff
-
-      @sOn.style.width = "#{@size}px"
-      @sOff.style.width = "#{@size}px"
-      @knob.style.width = "#{@size}px"
-      @knob.style.height = "#{sizes.cHeight}px"
+      # Width
+      el.style.width = "#{@size}px" for el in @elements
       @container.style.width = (@size * 2)  + 'px'
 
-      @containerWidth = (@size * 2)
+      # Height
+      # @knob.style.height = "#{sizes.cHeight}px"
 
-      @draggie = new Draggabilly @knob,
-        containment: @container
-        axis: 'x'
+      # Drag and Tap
+      #
+      # Container
+      tap = new Hammer.Tap
+      @mc = new Hammer.Manager @container,
+        dragLockToAxis: true
+        dragBlockHorizontal: true
+        preventDefault: true
 
-      @draggie.on 'dragEnd', _SPL.onDragEnd.bind(@)
+      @mc.add tap
+      @mc.on 'tap'       , _SPL.onTap.bind(@)
 
+      # Knob
+      pan = new Hammer.Pan direction: Hammer.DIRECTION_HORIZONTAL
+      @mk = new Hammer.Manager @knob,
+        dragLockToAxis: true
+        dragBlockHorizontal: true
+        preventDefault: true
 
-      # # Keyboard
-      # @sFlex.addEventListener 'keydown', _SPL.onKeydown.bind(@), false
+      @mk.add pan
+      @mk.on 'panstart'  , _SPL.onStart.bind(@)
+      @mk.on 'pan'       , _SPL.onMove.bind(@)
+      @mk.on 'panend'    , _SPL.onEnd.bind(@)
+      @mk.on 'pancancel' , _SPL.onEnd.bind(@)
 
-      # # Event toggle param
-      # @eventToggleParam = [
-      #   'instance' : @
-      #   'container': @container
-      #   'radios'   : @radios
-      #   'handler'  : @sFlex
-      #   'value'    : @valor
-      # ]
+      # Keyboard
+      @eventCall =
+        'keydown': _SPL.onKeydown.bind(@)
+
+      @container.addEventListener 'keydown', @eventCall.keydown
+
+      # Event toggle param
+      @eventToggleParam = [
+        'instance' : @
+        'container': @container
+        'radios'   : @radios
+        'value'    : @valor
+      ]
 
       # Event change
       @eventChange = new CustomEvent 'change'
 
       # Init
-      # _SPL.onToggle.bind(@)()
+      _SPL.onToggle.bind(@)()
       return
 
     initCheck: (container) ->
@@ -148,7 +216,7 @@ It is a plugin that show `radios buttons` like slide switch
       # Check if component was initialized
       if _SPL.initCheck container
         console.warn 'The component has been initialized.'
-        return null
+        return
       else
         id = ++GUID
 
@@ -167,71 +235,85 @@ It is a plugin that show `radios buttons` like slide switch
 
       if @radios.length != 2
         console.err '✖ No radios'
-        return null
+        return
 
+      # Template
       @template = _SPL.getTemplate()
+
+      # Largura
       @size = 0
 
-      @side = null
-      @side = false if @radios[0].checked and !@radios[1].checked
-      @side = true  if @radios[1].checked and !@radios[0].checked
+      # Ligado, desligado ou nulo
+      @ligado = null
+      @ligado = false if @radios[0].checked and !@radios[1].checked
+      @ligado = true  if @radios[1].checked and !@radios[0].checked
 
-      # @valor = @valorUpdate()
+      # Valor Inicial
+      @valor = null
+      @updateValor()
 
+      # Knob ativado
       @active = false
 
       # Animation
-      # @ticking = false
       @transform =
         translate:
           x: 0
 
+      # Keyboard
       @keyCodes =
         'space' : 32
         'left'  : 37
         'right' : 39
 
+      # Acessibilidade
+      @aria =
+        'tabindex'       : 0
+        'role'           : 'slider'
+        'aria-valuemin'  : @radios[0].title
+        'aria-valuemax'  : @radios[1].title
+        'aria-valuetext' : null
+        'aria-valuenow'  : null
+        'aria-labeledby' : labeledby
+        'aria-required'  : required
+
+      @container.setAttribute attrib, value for attrib, value of @aria
+
       _SPL.build.bind(@)()
 
     toggle: (v) ->
+      v = v || false
+      @ligado = v unless v is no
 
-      @side = if v isnt undefined then v else @side
-
-      if @side isnt null
+      if @ligado isnt null
         @active = true
-        @transform.translate.x = if @side then -@size else 0
+        @transform.translate.x = if @ligado then @size else 0
 
-        if @side
-          @radios[0].removeAttribute 'checked'
-          @radios[0].checked = false
-          @radios[1].setAttribute 'checked', ''
-          @radios[1].checked = true
-        else
-          @radios[1].removeAttribute 'checked'
-          @radios[1].checked = false
-          @radios[0].setAttribute 'checked', ''
-          @radios[0].checked = true
+        a = if @ligado then 1 else 0
+        b = a^1
+
+        _SPL.checked(@radios[a])
+        _SPL.unchecked(@radios[b])
 
       else
         @active = false
-        @transform.translate.x = -@size / 2
-        for radio in @radios
-          radio.removeAttribute 'checked'
-          radio.checked = false
+        @transform.translate.x = @size / 2
+        _SPL.unchecked(radio) for radio in @radios
 
-      @ariaAttr()
-      @captionsActive()
-      @requestUpdate()
+      @isActive()
+      @updateAria()
+      @updateValor()
+      @updatePosition()
       return
 
     swap: (v) ->
-      v = if v isnt undefined then v else null
-      @side = if v isnt null then !v else !@side
+      @ligado = v if v?
+      @ligado = !@ligado
       _SPL.onToggle.bind(@)()
       return
 
     reset: ->
-      @side = null
+      @ligado = null
       _SPL.onToggle.bind(@)()
       return
 
@@ -240,7 +322,6 @@ It is a plugin that show `radios buttons` like slide switch
       clone.style.visibility = 'hidden'
       clone.style.position   = 'absolute'
 
-      # Magic
       document.body.appendChild clone
 
       sOnSelector  = '.switchSlide__opt--on'
@@ -252,52 +333,64 @@ It is a plugin that show `radios buttons` like slide switch
       sizes =
         'sOn': sOn.clientWidth
         'sOff': sOff.clientWidth
-        'cHeight': clone.clientHeight
 
       document.body.removeChild clone
       clone = null
       return sizes
 
-    ariaAttr: ->
-      if @side == null
-        v = @side
-      else
-        v = if @side then @radios[1].title else @radios[0].title
-      @sFlex.setAttribute 'aria-valuenow', v
-      @sFlex.setAttribute 'aria-valuetext', v
-      return
-
-    valorUpdate: ->
-      if @side == null
-        v = @side
-      else
-        v = if @side then @radios[1].value else @radios[0].value
-      return v
-
-    captionsActive: ->
+    isActive: ->
       method = if @active then 'add' else 'remove'
-      classie[method] @sOn, 'is-active'
-      classie[method] @sOff, 'is-active'
+      classie[method] @knob, 'is-active'
       return
 
-    updateTransform: ->
+    updateAria: ->
+      if @ligado isnt null
+        v = if @ligado is on then @radios[1].title else @radios[0].title
+        @container.setAttribute 'aria-valuenow', v
+        @container.setAttribute 'aria-valuetext', v
+      return
+
+    updateValor: ->
+      @valor = null
+      if @ligado isnt null
+        @valor = if @ligado is on then @radios[1].value else @radios[0].value
+
+      if @eventToggleParam?
+        @eventToggleParam[0].value = @valor
+      return
+
+    updatePosition: ->
       value = ["translate3d(#{@transform.translate.x}px, 0, 0)"]
       @knob.style[transformProperty] = value.join " "
       return
 
-    requestUpdate: ->
-      if @ticking == false
-        @ticking = true
-        requestAnimationFrame @updateTransform.bind(@)
-      return
-
     destroy: ->
-      style = @container.style
-      style.width = ''
-      @container.removeChild @sFlex
-      @container.removeAttribute "data-sr#{@container.srGUID}"
-      delete @container.srGUID
-      @sFlex = null
+      if @container isnt null
+        # Remove attributes from radios
+        radio.removeAttribute 'data-side' for radio in @radios
+
+        # # Remove all children from @container
+        # while @container.hasChildNodes()
+        #   @container.removeChild @container.lastChild
+
+        # Remove @elements from @container
+        @container.removeChild el for el in @elements
+
+        # Remove attributes from @container
+        @container.removeAttribute attr for attr of @aria
+        @container.removeAttribute "class"
+        @container.removeAttribute "style"
+        @container.removeAttribute "data-sr#{@container.srGUID}"
+
+        # Remove Event from @container
+        @container.removeEventListener 'keydown', @eventCall.keydown
+        delete @container.srGUID
+
+        # Destroy Hammer Events
+        @mk.destroy()
+        @mc.destroy()
+
+        @container = null
       return
 
   # https://github.com/metafizzy/outlayer/blob/master/outlayer.js#L887
