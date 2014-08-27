@@ -1,9 +1,9 @@
 {
-  "name": "switch-radio",
-  "title": "Slide Switch Radio",
+  "name": "switch-slider",
+  "title": "Slide Switch",
   "description": "It is a plugin that show radios buttons like slide switch",
   "main": "./dist/switch.js",
-  "version": "0.6.1",
+  "version": "0.0.1",
   "author": "Thiago Lagden <lagden@gmail.com>",
   "repository": {
     "type": "git",
@@ -13,9 +13,6 @@
     "node": ">=0.8.0"
   },
   "download": "https://github.com/lagden/switchRadio/releases",
-  "dependencies": {
-    "hammerjs": "^2.0.1"
-  },
   "devDependencies": {
     "browser-sync": "^1.2.1",
     "coffee-script": "^1.7.1",
@@ -34,8 +31,5 @@
   },
   "volo": {
     "url": "https://raw.githubusercontent.com/lagden/switchRadio/{version}/switch.js"
-  },
-  "scripts": {
-    "install": "volo add -skipexists && bower install"
   }
 }

@@ -13,19 +13,15 @@ It is a plugin that show `radios buttons` like slide switch
         'get-style-property/get-style-property'
         'classie/classie'
         'eventEmitter/EventEmitter'
-        'greensock/TweenMax'
-        'greensock/utils/Draggable'
-        'greensock/plugins/CSSPlugin'
+        'draggabilly/draggabilly'
       ], factory
   else
     root.SwitchSlide = factory root.getStyleProperty,
                                root.classie,
                                root.EventEmitter,
-                               root.TweenMax,
-                               root.Draggable,
-                               root.CSSPlugin
+                               root.Draggabilly
   return
-) @, (getStyleProperty, classie, EventEmitter, TM, Draggable, CSSPlugin) ->
+) @, (getStyleProperty, classie, EventEmitter, Draggabilly) ->
 
   'use strict'
 
@@ -42,13 +38,31 @@ It is a plugin that show `radios buttons` like slide switch
     # Template
     getTemplate: ->
       [
-        '<div class="switchSlide__opt switchSlide__opt--on">{captionOn}</div>'
-        '<div class="switchSlide__opt switchSlide__opt--off">{captionOff}</div>'
+        '<div class="switchSlide__opt switchSlide__opt--on"><span>{captionOn}</span></div>'
+        '<div class="switchSlide__opt switchSlide__opt--off"><span>{captionOff}</span></div>'
         '<div class="switchSlide__knob"></div>'
       ].join ''
 
-    endDrag: (event) ->
-      console.log event
+    onDragStart: (draggieInstance, event, pointer) ->
+
+
+      classie.add draggieInstance.element, 'is-dragging'
+      # console.log draggieInstance
+      # pos = parseInt @knob.style[transformProperty].replace(/translate3d\(([\-0-9]+)px, 0px, 0px\)/gi, '$1'), 10
+      # pos += if isNaN(pos) then 0 else (@size / 2)
+      # final = if pos < @size then 0 else @size
+      # TM.to @knob, 0.3,
+      #   x: final
+      # return
+
+    onDragEnd: (draggieInstance, event, pointer) ->
+      # console.log draggieInstance
+      classie.remove draggieInstance.element, 'is-dragging'
+      # pos = draggieInstance.position.x + (@size / 2)
+      # pos = draggieInstance.position.x
+
+      # @transform.translate.x = if pos < @size then 0 else @size
+      # @updateTransform()
       return
 
     build: () ->
@@ -65,11 +79,6 @@ It is a plugin that show `radios buttons` like slide switch
       r =
         'captionOn'  : captionOn
         'captionOff' : captionOff
-        'valuemax'    : @aria['aria-valuemax']
-        'valuemin'   : @aria['aria-valuemin']
-        'valuenow'   : @aria['aria-valuenow']
-        'labeledby'  : @aria['aria-labeledby']
-        'required'   : @aria['aria-required']
 
       content = @template.replace /\{(.*?)\}/g, (a, b) ->
         return r[b]
@@ -91,18 +100,13 @@ It is a plugin that show `radios buttons` like slide switch
       @knob.style.height = "#{sizes.cHeight}px"
       @container.style.width = (@size * 2)  + 'px'
 
-      containerWidth = (@size * 2)
+      @containerWidth = (@size * 2)
 
-      TM.to @knob, 0.5,
-        x: Math.round(100 / containerWidth) * containerWidth
-        delay: 0.1
+      @draggie = new Draggabilly @knob,
+        containment: @container
+        axis: 'x'
 
-      @draggable = Draggable.create @knob,
-        bounds: @container
-        edgeResistance: 0.65
-        force3D: true
-        type: 'x'
-        endDrag: _SPL.endDrag.bind(@)
+      @draggie.on 'dragEnd', _SPL.onDragEnd.bind(@)
 
 
       # # Keyboard
@@ -178,17 +182,9 @@ It is a plugin that show `radios buttons` like slide switch
 
       # Animation
       # @ticking = false
-      # @transform =
-      #   translate:
-      #     x: 0
-
-      @aria =
-        'aria-valuemax'  : @radios[0].title
-        'aria-valuemin'  : @radios[1].title
-        'aria-valuetext' : null
-        'aria-valuenow'  : null
-        'aria-labeledby' : labeledby
-        'aria-required'  : required
+      @transform =
+        translate:
+          x: 0
 
       @keyCodes =
         'space' : 32
@@ -286,8 +282,7 @@ It is a plugin that show `radios buttons` like slide switch
 
     updateTransform: ->
       value = ["translate3d(#{@transform.translate.x}px, 0, 0)"]
-      @sFlex.style[transformProperty] = value.join " "
-      @ticking = false
+      @knob.style[transformProperty] = value.join " "
       return
 
     requestUpdate: ->

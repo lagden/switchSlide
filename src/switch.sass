@@ -5,9 +5,11 @@
 
     width: auto
     position: relative
+    z-index: 1
 
     font-family: Consolas, 'Liberation Mono', Courier, monospace
     color: rgb(67, 67, 67)
+    border: 1px solid gray
 
 
     border-radius: 5px
@@ -21,14 +23,28 @@
 
     > .switchSlide__opt
         text-align: center
-        background-color: red
         box-sizing: content-box
-        // width: 150px
         padding: 5px 10px
+
+        // &:first-child
+        //     border-right: 1px solid gray
+
+        > span
+            pointer-events: none
+            position: relative
+            z-index: 3
 
 
     > .switchSlide__knob
         position: absolute
-        top: 0
-        left: 0
-        background-color: rgba(255, 255, 255, 0.5)
+        top: -1px
+        left: -1px
+        background-color: rgba(255, 255, 255, 1)
+        z-index: 2
+        border: 1px solid gray
+        box-sizing: content-box
+        border-radius: 5px
+        // transform: translate3d(0, 0, 0)
+        // transition: transform 0.2s linear
+        &.is-dragging
+            transition: none

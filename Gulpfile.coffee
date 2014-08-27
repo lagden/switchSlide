@@ -46,10 +46,9 @@ map =
       'dist/lib/get-style-property/get-style-property.js'
       'dist/lib/classie/classie.js'
       'dist/lib/eventEmitter/EventEmitter.js'
-      'dist/lib/gsap/src/uncompressed/TweenMax.js'
-      'dist/lib/gsap/src/uncompressed/utils/Draggable.js'
-      'dist/lib/gsap/src/uncompressed/plugins/CSSPlugin.js'
-      'dist/lib/gsap/src/uncompressed/plugins/ThrowPropsPlugin.js'
+      'dist/lib/eventie/eventie.js'
+      'dist/lib/get-size/get-size.js'
+      'dist/lib/draggabilly/draggabilly.js'
       'dist/switch.js'
     ]
     out:  'switch.pkg.js'

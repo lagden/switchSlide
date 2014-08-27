@@ -12,11 +12,11 @@ var __hasProp = {}.hasOwnProperty,
 
 (function(root, factory) {
   if (typeof define === "function" && define.amd) {
-    define(['get-style-property/get-style-property', 'classie/classie', 'eventEmitter/EventEmitter', 'greensock/TweenMax', 'greensock/utils/Draggable', 'greensock/plugins/CSSPlugin'], factory);
+    define(['get-style-property/get-style-property', 'classie/classie', 'eventEmitter/EventEmitter', 'draggabilly/draggabilly'], factory);
   } else {
-    root.SwitchSlide = factory(root.getStyleProperty, root.classie, root.EventEmitter, root.TweenMax, root.Draggable, root.CSSPlugin);
+    root.SwitchSlide = factory(root.getStyleProperty, root.classie, root.EventEmitter, root.Draggabilly);
   }
-})(this, function(getStyleProperty, classie, EventEmitter, TM, Draggable, CSSPlugin) {
+})(this, function(getStyleProperty, classie, EventEmitter, Draggabilly) {
   'use strict';
   var GUID, SwitchSlide, instances, transformProperty, _SPL;
   transformProperty = getStyleProperty('transform');
@@ -24,13 +24,16 @@ var __hasProp = {}.hasOwnProperty,
   instances = {};
   _SPL = {
     getTemplate: function() {
-      return ['<div class="switchSlide__opt switchSlide__opt--on">{captionOn}</div>', '<div class="switchSlide__opt switchSlide__opt--off">{captionOff}</div>', '<div class="switchSlide__knob"></div>'].join('');
+      return ['<div class="switchSlide__opt switchSlide__opt--on"><span>{captionOn}</span></div>', '<div class="switchSlide__opt switchSlide__opt--off"><span>{captionOff}</span></div>', '<div class="switchSlide__knob"></div>'].join('');
     },
-    endDrag: function(event) {
-      console.log(event);
+    onDragStart: function(draggieInstance, event, pointer) {
+      return classie.add(draggieInstance.element, 'is-dragging');
+    },
+    onDragEnd: function(draggieInstance, event, pointer) {
+      classie.remove(draggieInstance.element, 'is-dragging');
     },
     build: function() {
-      var captionOff, captionOn, containerWidth, content, labels, r, sizes;
+      var captionOff, captionOn, content, labels, r, sizes;
       captionOn = captionOff = '';
       labels = this.container.getElementsByTagName('label');
       if (labels.length === 2) {
@@ -41,12 +44,7 @@ var __hasProp = {}.hasOwnProperty,
       }
       r = {
         'captionOn': captionOn,
-        'captionOff': captionOff,
-        'valuemax': this.aria['aria-valuemax'],
-        'valuemin': this.aria['aria-valuemin'],
-        'valuenow': this.aria['aria-valuenow'],
-        'labeledby': this.aria['aria-labeledby'],
-        'required': this.aria['aria-required']
+        'captionOff': captionOff
       };
       content = this.template.replace(/\{(.*?)\}/g, function(a, b) {
         return r[b];
@@ -62,18 +60,12 @@ var __hasProp = {}.hasOwnProperty,
       this.knob.style.width = "" + this.size + "px";
       this.knob.style.height = "" + sizes.cHeight + "px";
       this.container.style.width = (this.size * 2) + 'px';
-      containerWidth = this.size * 2;
-      TM.to(this.knob, 0.5, {
-        x: Math.round(100 / containerWidth) * containerWidth,
-        delay: 0.1
+      this.containerWidth = this.size * 2;
+      this.draggie = new Draggabilly(this.knob, {
+        containment: this.container,
+        axis: 'x'
       });
-      this.draggable = Draggable.create(this.knob, {
-        bounds: this.container,
-        edgeResistance: 0.65,
-        force3D: true,
-        type: 'x',
-        endDrag: _SPL.endDrag.bind(this)
-      });
+      this.draggie.on('dragEnd', _SPL.onDragEnd.bind(this));
       this.eventChange = new CustomEvent('change');
     },
     initCheck: function(container) {
@@ -135,13 +127,10 @@ var __hasProp = {}.hasOwnProperty,
         this.side = true;
       }
       this.active = false;
-      this.aria = {
-        'aria-valuemax': this.radios[0].title,
-        'aria-valuemin': this.radios[1].title,
-        'aria-valuetext': null,
-        'aria-valuenow': null,
-        'aria-labeledby': labeledby,
-        'aria-required': required
+      this.transform = {
+        translate: {
+          x: 0
+        }
       };
       this.keyCodes = {
         'space': 32,
@@ -245,8 +234,7 @@ var __hasProp = {}.hasOwnProperty,
     SwitchSlide.prototype.updateTransform = function() {
       var value;
       value = ["translate3d(" + this.transform.translate.x + "px, 0, 0)"];
-      this.sFlex.style[transformProperty] = value.join(" ");
-      this.ticking = false;
+      this.knob.style[transformProperty] = value.join(" ");
     };
 
     SwitchSlide.prototype.requestUpdate = function() {
