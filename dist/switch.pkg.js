@@ -2976,12 +2976,31 @@ var __hasProp = {}.hasOwnProperty,
       return sizes;
     },
     onToggle: function() {
-      var radio, _i, _len, _ref;
-      this.toggle();
+      var a, b, radio, _i, _j, _len, _len1, _ref, _ref1;
+      if (this.ligado !== null) {
+        this.active = true;
+        this.transform.translate.x = this.ligado ? this.size : 0;
+        a = this.ligado ? 1 : 0;
+        b = a ^ 1;
+        _SPL.checked(this.radios[a]);
+        _SPL.unchecked(this.radios[b]);
+      } else {
+        this.active = false;
+        this.transform.translate.x = this.size / 2;
+        _ref = this.radios;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          radio = _ref[_i];
+          _SPL.unchecked(radio);
+        }
+      }
+      this.isActive();
+      this.updateAria();
+      this.updateValor();
+      this.updatePosition();
       this.emitEvent('toggle', this.eventToggleParam);
-      _ref = this.radios;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        radio = _ref[_i];
+      _ref1 = this.radios;
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        radio = _ref1[_j];
         if (radio.checked) {
           radio.dispatchEvent(this.eventChange);
         }
@@ -3201,37 +3220,11 @@ var __hasProp = {}.hasOwnProperty,
       ];
       this.eventChange = new CustomEvent('change');
       _SPL.build.call(this);
+      return;
     }
 
-    SwitchSlide.prototype.toggle = function() {
-      var a, b, radio, _i, _len, _ref;
-      if (this.ligado !== null) {
-        this.active = true;
-        this.transform.translate.x = this.ligado ? this.size : 0;
-        a = this.ligado ? 1 : 0;
-        b = a ^ 1;
-        _SPL.checked(this.radios[a]);
-        _SPL.unchecked(this.radios[b]);
-      } else {
-        this.active = false;
-        this.transform.translate.x = this.size / 2;
-        _ref = this.radios;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          radio = _ref[_i];
-          _SPL.unchecked(radio);
-        }
-      }
-      this.isActive();
-      this.updateAria();
-      this.updateValor();
-      this.updatePosition();
-    };
-
     SwitchSlide.prototype.swap = function(v) {
-      if (v != null) {
-        this.ligado = v;
-      }
-      this.ligado = !this.ligado;
+      this.ligado = v != null ? v : !this.ligado;
       _SPL.onToggle.call(this);
     };
 
