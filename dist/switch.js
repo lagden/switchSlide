@@ -226,7 +226,7 @@ var __hasProp = {}.hasOwnProperty,
         this.radios.push(radio);
       }
       if (this.radios.length !== 2) {
-        console.err('✖ No radios');
+        console.error('✖ No radios');
         return;
       }
       this.template = _SPL.getTemplate();
