@@ -26,6 +26,24 @@ var __hasProp = {}.hasOwnProperty,
     getTemplate: function() {
       return ['<div class="switchSlide__opt switchSlide__opt--off">', '<span>{captionOff}</span></div>', '<div class="switchSlide__opt switchSlide__opt--on">', '<span>{captionOn}</span></div>', '<div class="switchSlide__knob"></div>'].join('');
     },
+    getSizes: function() {
+      var clone, sOff, sOffSelector, sOn, sOnSelector, sizes;
+      clone = this.container.cloneNode(true);
+      clone.style.visibility = 'hidden';
+      clone.style.position = 'absolute';
+      document.body.appendChild(clone);
+      sOnSelector = '.switchSlide__opt--on';
+      sOffSelector = '.switchSlide__opt--off';
+      sOn = clone.querySelector(sOnSelector);
+      sOff = clone.querySelector(sOffSelector);
+      sizes = {
+        'sOn': sOn.clientWidth,
+        'sOff': sOff.clientWidth
+      };
+      document.body.removeChild(clone);
+      clone = null;
+      return sizes;
+    },
     onToggle: function() {
       var radio, _i, _len, _ref;
       this.toggle();
@@ -38,9 +56,9 @@ var __hasProp = {}.hasOwnProperty,
         }
       }
     },
-    onStart: function(event) {
-      this.container.focus();
-      classie.add(this.knob, 'is-dragging');
+    onStart: function(el, event) {
+      el.focus();
+      classie.add(el, 'is-dragging');
     },
     onMove: function(event) {
       var v;
@@ -51,17 +69,17 @@ var __hasProp = {}.hasOwnProperty,
       this.transform.translate.x = Math.min(this.size, Math.max(v, 0));
       this.updatePosition();
     },
-    onEnd: function(event) {
+    onEnd: function(el, event) {
       this.ligado = Math.abs(this.transform.translate.x) > (this.size / 2);
-      classie.remove(this.knob, 'is-dragging');
-      _SPL.onToggle.bind(this)();
+      classie.remove(el, 'is-dragging');
+      _SPL.onToggle.call(this);
     },
-    onTap: function(event) {
+    onTap: function(el, event) {
       var center, rect;
-      rect = this.container.getBoundingClientRect();
+      rect = el.getBoundingClientRect();
       center = rect.left + (rect.width / 2);
       this.ligado = event.center.x > center;
-      _SPL.onToggle.bind(this)();
+      _SPL.onToggle.call(this);
     },
     onKeydown: function(event) {
       var dispara;
@@ -91,8 +109,18 @@ var __hasProp = {}.hasOwnProperty,
       radio.removeAttribute('checked');
       radio.checked = false;
     },
+    aria: function(el) {
+      var attrib, value, _ref, _results;
+      _ref = this.aria;
+      _results = [];
+      for (attrib in _ref) {
+        value = _ref[attrib];
+        _results.push(el.setAttribute(attrib, value));
+      }
+      return _results;
+    },
     build: function() {
-      var attrib, captionOff, captionOn, content, el, labels, pan, r, sizes, tap, value, _i, _len, _ref, _ref1;
+      var captionOff, captionOn, content, el, labels, pan, r, sizes, tap, _i, _len, _ref;
       captionOn = captionOff = '';
       labels = this.container.getElementsByTagName('label');
       if (labels.length === 2) {
@@ -110,25 +138,21 @@ var __hasProp = {}.hasOwnProperty,
       });
       this.container.insertAdjacentHTML('afterbegin', content);
       this.elements = [];
-      sizes = this.getSizes();
+      sizes = _SPL.getSizes.call(this);
       this.size = Math.max(sizes.sOn, sizes.sOff);
       this.sOn = this.container.querySelector('.switchSlide__opt--on');
       this.sOff = this.container.querySelector('.switchSlide__opt--off');
-      this.knob = this.container.querySelector('.switchSlide__knob');
+      this.drag = this.container.querySelector('.switchSlide__knob');
       this.elements.push(this.sOn);
       this.elements.push(this.sOff);
-      this.elements.push(this.knob);
+      this.elements.push(this.drag);
       _ref = this.elements;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         el = _ref[_i];
         el.style.width = "" + this.size + "px";
       }
       this.container.style.width = (this.size * 2) + 'px';
-      _ref1 = this.aria;
-      for (attrib in _ref1) {
-        value = _ref1[attrib];
-        this.container.setAttribute(attrib, value);
-      }
+      _SPL.aria.call(this, this.container);
       tap = new Hammer.Tap;
       this.mc = new Hammer.Manager(this.container, {
         dragLockToAxis: true,
@@ -136,34 +160,25 @@ var __hasProp = {}.hasOwnProperty,
         preventDefault: true
       });
       this.mc.add(tap);
-      this.mc.on('tap', _SPL.onTap.bind(this));
+      this.mc.on('tap', _SPL.onTap.bind(this, this.container));
       pan = new Hammer.Pan({
         direction: Hammer.DIRECTION_HORIZONTAL
       });
-      this.mk = new Hammer.Manager(this.knob, {
+      this.mk = new Hammer.Manager(this.drag, {
         dragLockToAxis: true,
         dragBlockHorizontal: true,
         preventDefault: true
       });
       this.mk.add(pan);
-      this.mk.on('panstart', _SPL.onStart.bind(this));
+      this.mk.on('panstart', _SPL.onStart.bind(this, this.drag));
       this.mk.on('pan', _SPL.onMove.bind(this));
-      this.mk.on('panend', _SPL.onEnd.bind(this));
-      this.mk.on('pancancel', _SPL.onEnd.bind(this));
+      this.mk.on('panend', _SPL.onEnd.bind(this, this.drag));
+      this.mk.on('pancancel', _SPL.onEnd.bind(this, this.drag));
       this.eventCall = {
         'keydown': _SPL.onKeydown.bind(this)
       };
       this.container.addEventListener('keydown', this.eventCall.keydown);
-      this.eventToggleParam = [
-        {
-          'instance': this,
-          'container': this.container,
-          'radios': this.radios,
-          'value': this.valor
-        }
-      ];
-      this.eventChange = new CustomEvent('change');
-      _SPL.onToggle.bind(this)();
+      _SPL.onToggle.call(this);
     },
     initCheck: function(container) {
       var attrib, attribs, data, regex, _i, _len;
@@ -246,7 +261,15 @@ var __hasProp = {}.hasOwnProperty,
         'aria-labeledby': labeledby,
         'aria-required': required
       };
-      _SPL.build.bind(this)();
+      this.eventToggleParam = [
+        {
+          'instance': this,
+          'radios': this.radios,
+          'value': this.valor
+        }
+      ];
+      this.eventChange = new CustomEvent('change');
+      _SPL.build.call(this);
     }
 
     SwitchSlide.prototype.toggle = function(v) {
@@ -282,37 +305,18 @@ var __hasProp = {}.hasOwnProperty,
         this.ligado = v;
       }
       this.ligado = !this.ligado;
-      _SPL.onToggle.bind(this)();
+      _SPL.onToggle.call(this);
     };
 
     SwitchSlide.prototype.reset = function() {
       this.ligado = null;
-      _SPL.onToggle.bind(this)();
-    };
-
-    SwitchSlide.prototype.getSizes = function() {
-      var clone, sOff, sOffSelector, sOn, sOnSelector, sizes;
-      clone = this.container.cloneNode(true);
-      clone.style.visibility = 'hidden';
-      clone.style.position = 'absolute';
-      document.body.appendChild(clone);
-      sOnSelector = '.switchSlide__opt--on';
-      sOffSelector = '.switchSlide__opt--off';
-      sOn = clone.querySelector(sOnSelector);
-      sOff = clone.querySelector(sOffSelector);
-      sizes = {
-        'sOn': sOn.clientWidth,
-        'sOff': sOff.clientWidth
-      };
-      document.body.removeChild(clone);
-      clone = null;
-      return sizes;
+      _SPL.onToggle.call(this);
     };
 
     SwitchSlide.prototype.isActive = function() {
       var method;
       method = this.active ? 'add' : 'remove';
-      classie[method](this.knob, 'is-active');
+      classie[method](this.drag, 'is-active');
     };
 
     SwitchSlide.prototype.updateAria = function() {
@@ -337,7 +341,7 @@ var __hasProp = {}.hasOwnProperty,
     SwitchSlide.prototype.updatePosition = function() {
       var value;
       value = ["translate3d(" + this.transform.translate.x + "px, 0, 0)"];
-      this.knob.style[transformProperty] = value.join(" ");
+      this.drag.style[transformProperty] = value.join(" ");
     };
 
     SwitchSlide.prototype.destroy = function() {

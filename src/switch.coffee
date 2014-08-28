@@ -45,6 +45,27 @@ It is a plugin that show `radios buttons` like switch slide
         '<div class="switchSlide__knob"></div>'
       ].join ''
 
+    getSizes: ->
+      clone = @container.cloneNode true
+      clone.style.visibility = 'hidden'
+      clone.style.position   = 'absolute'
+
+      document.body.appendChild clone
+
+      sOnSelector  = '.switchSlide__opt--on'
+      sOffSelector = '.switchSlide__opt--off'
+
+      sOn  = clone.querySelector sOnSelector
+      sOff = clone.querySelector sOffSelector
+
+      sizes =
+        'sOn': sOn.clientWidth
+        'sOff': sOff.clientWidth
+
+      document.body.removeChild clone
+      clone = null
+      return sizes
+
     # Event Handlers
     onToggle: ->
       @toggle()
@@ -53,9 +74,9 @@ It is a plugin that show `radios buttons` like switch slide
         radio.dispatchEvent @eventChange
       return
 
-    onStart: (event) ->
-      @container.focus()
-      classie.add @knob, 'is-dragging'
+    onStart: (el, event) ->
+      el.focus()
+      classie.add el, 'is-dragging'
       return
 
     onMove: (event) ->
@@ -68,18 +89,18 @@ It is a plugin that show `radios buttons` like switch slide
       @updatePosition()
       return
 
-    onEnd: (event) ->
+    onEnd: (el, event) ->
       @ligado = Math.abs(@transform.translate.x) > (@size / 2)
-      classie.remove @knob, 'is-dragging'
-      _SPL.onToggle.bind(@)()
+      classie.remove el, 'is-dragging'
+      _SPL.onToggle.call(@)
       return
 
-    onTap: (event) ->
-      rect = @container.getBoundingClientRect()
+    onTap: (el, event) ->
+      rect = el.getBoundingClientRect()
       center = rect.left + (rect.width / 2)
       @ligado = event.center.x > center
 
-      _SPL.onToggle.bind(@)()
+      _SPL.onToggle.call(@)
       return
 
     onKeydown: (event) ->
@@ -110,6 +131,9 @@ It is a plugin that show `radios buttons` like switch slide
       radio.checked = false
       return
 
+    aria: (el) ->
+      el.setAttribute attrib, value for attrib, value of @aria
+
     build: () ->
       captionOn = captionOff = ''
 
@@ -133,23 +157,23 @@ It is a plugin that show `radios buttons` like switch slide
       # Elements and Size elements
       @elements = []
 
-      sizes = @getSizes()
+      sizes = _SPL.getSizes.call(@)
       @size = Math.max sizes.sOn, sizes.sOff
 
       @sOn   = @container.querySelector '.switchSlide__opt--on'
       @sOff  = @container.querySelector '.switchSlide__opt--off'
-      @knob  = @container.querySelector '.switchSlide__knob'
+      @drag  = @container.querySelector '.switchSlide__knob'
 
       @elements.push @sOn
       @elements.push @sOff
-      @elements.push @knob
+      @elements.push @drag
 
       # Width
       el.style.width = "#{@size}px" for el in @elements
       @container.style.width = (@size * 2)  + 'px'
 
       # Aria
-      @container.setAttribute attrib, value for attrib, value of @aria
+      _SPL.aria.call(@, @container)
 
       # Drag and Tap
       #
@@ -161,20 +185,20 @@ It is a plugin that show `radios buttons` like switch slide
         preventDefault: true
 
       @mc.add tap
-      @mc.on 'tap'       , _SPL.onTap.bind(@)
+      @mc.on 'tap', _SPL.onTap.bind(@, @container)
 
       # Knob
       pan = new Hammer.Pan direction: Hammer.DIRECTION_HORIZONTAL
-      @mk = new Hammer.Manager @knob,
+      @mk = new Hammer.Manager @drag,
         dragLockToAxis: true
         dragBlockHorizontal: true
         preventDefault: true
 
       @mk.add pan
-      @mk.on 'panstart'  , _SPL.onStart.bind(@)
+      @mk.on 'panstart'  , _SPL.onStart.bind(@, @drag)
       @mk.on 'pan'       , _SPL.onMove.bind(@)
-      @mk.on 'panend'    , _SPL.onEnd.bind(@)
-      @mk.on 'pancancel' , _SPL.onEnd.bind(@)
+      @mk.on 'panend'    , _SPL.onEnd.bind(@, @drag)
+      @mk.on 'pancancel' , _SPL.onEnd.bind(@, @drag)
 
       # Keyboard
       @eventCall =
@@ -182,19 +206,8 @@ It is a plugin that show `radios buttons` like switch slide
 
       @container.addEventListener 'keydown', @eventCall.keydown
 
-      # Event toggle param
-      @eventToggleParam = [
-        'instance' : @
-        'container': @container
-        'radios'   : @radios
-        'value'    : @valor
-      ]
-
-      # Event change
-      @eventChange = new CustomEvent 'change'
-
       # Init
-      _SPL.onToggle.bind(@)()
+      _SPL.onToggle.call(@)
       return
 
     initCheck: (container) ->
@@ -278,7 +291,17 @@ It is a plugin that show `radios buttons` like switch slide
         'aria-labeledby' : labeledby
         'aria-required'  : required
 
-      _SPL.build.bind(@)()
+      # Event toggle param
+      @eventToggleParam = [
+        'instance' : @
+        'radios'   : @radios
+        'value'    : @valor
+      ]
+
+      # Event change
+      @eventChange = new CustomEvent 'change'
+
+      _SPL.build.call(@)
 
     toggle: (v) ->
       v = v || false
@@ -308,38 +331,17 @@ It is a plugin that show `radios buttons` like switch slide
     swap: (v) ->
       @ligado = v if v?
       @ligado = !@ligado
-      _SPL.onToggle.bind(@)()
+      _SPL.onToggle.call(@)
       return
 
     reset: ->
       @ligado = null
-      _SPL.onToggle.bind(@)()
+      _SPL.onToggle.call(@)
       return
-
-    getSizes: ->
-      clone = @container.cloneNode true
-      clone.style.visibility = 'hidden'
-      clone.style.position   = 'absolute'
-
-      document.body.appendChild clone
-
-      sOnSelector  = '.switchSlide__opt--on'
-      sOffSelector = '.switchSlide__opt--off'
-
-      sOn  = clone.querySelector sOnSelector
-      sOff = clone.querySelector sOffSelector
-
-      sizes =
-        'sOn': sOn.clientWidth
-        'sOff': sOff.clientWidth
-
-      document.body.removeChild clone
-      clone = null
-      return sizes
 
     isActive: ->
       method = if @active then 'add' else 'remove'
-      classie[method] @knob, 'is-active'
+      classie[method] @drag, 'is-active'
       return
 
     updateAria: ->
@@ -360,7 +362,7 @@ It is a plugin that show `radios buttons` like switch slide
 
     updatePosition: ->
       value = ["translate3d(#{@transform.translate.x}px, 0, 0)"]
-      @knob.style[transformProperty] = value.join " "
+      @drag.style[transformProperty] = value.join " "
       return
 
     destroy: ->

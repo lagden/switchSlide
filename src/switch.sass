@@ -2,6 +2,7 @@
     display: flex
     flex-flow: row nowrap
     justify-content: center
+    align-items: center
 
     width: auto
     position: relative
@@ -25,13 +26,7 @@
     &:focus
         outline: none
         > .switchSlide__knob
-            border: 1px solid #465F9C
-
-    > input[type="radio"],
-    > label
-        z-index: 1
-        visibility: hidden
-        position: absolute
+            border-color: #465F9C
 
     > .switchSlide__opt
         text-align: center
@@ -58,7 +53,7 @@
         height: 100%
 
         background: linear-gradient(rgb(246, 248, 249) 0%, rgb(229, 235, 238) 50%, rgb(215, 222, 227) 51%, rgb(245, 247, 249) 100%)
-        border: 1px solid rgb(51, 51, 51)
+        border: 2px solid rgb(51, 51, 51)
 
         border-radius: 5px
         opacity: 0
@@ -70,3 +65,9 @@
 
         &.is-active
             opacity: 1
+
+    > input[type="radio"],
+    > label
+        z-index: 1
+        visibility: hidden
+        position: absolute
