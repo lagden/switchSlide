@@ -1,7 +1,7 @@
 ###
 switch.js - SwitchSlide
 
-It is a plugin that show `radios buttons` like slide switch
+It is a plugin that show `radios buttons` like switch slide
 
 @author      Thiago Lagden <lagden [at] gmail.com>
 @copyright   Author
@@ -38,10 +38,10 @@ It is a plugin that show `radios buttons` like slide switch
     # Template
     getTemplate: ->
       [
-        '<div class="switchSlide__opt switchSlide__opt--on">'
-        '<span>{captionOn}</span></div>'
         '<div class="switchSlide__opt switchSlide__opt--off">'
         '<span>{captionOff}</span></div>'
+        '<div class="switchSlide__opt switchSlide__opt--on">'
+        '<span>{captionOn}</span></div>'
         '<div class="switchSlide__knob"></div>'
       ].join ''
 
@@ -69,14 +69,12 @@ It is a plugin that show `radios buttons` like slide switch
       return
 
     onEnd: (event) ->
-      @ligado = Boolean Math.abs @transform.translate.x > @size / 2
+      @ligado = Math.abs(@transform.translate.x) > (@size / 2)
       classie.remove @knob, 'is-dragging'
       _SPL.onToggle.bind(@)()
       return
 
     onTap: (event) ->
-      console.log 'onTap', @ligado
-
       rect = @container.getBoundingClientRect()
       center = rect.left + (rect.width / 2)
       @ligado = event.center.x > center
@@ -85,18 +83,21 @@ It is a plugin that show `radios buttons` like slide switch
       return
 
     onKeydown: (event) ->
+      dispara = false
       switch event.keyCode
         when @keyCodes.space
           @ligado = !@ligado
-          _SPL.onToggle.bind(@)()
+          dispara = true
 
         when @keyCodes.right
           @ligado = true
-          _SPL.onToggle.bind(@)()
+          dispara = true
 
         when @keyCodes.left
           @ligado = false
-          _SPL.onToggle.bind(@)()
+          dispara = true
+
+      _SPL.onToggle.call(@) if dispara
       return
 
     checked: (radio) ->
@@ -114,8 +115,8 @@ It is a plugin that show `radios buttons` like slide switch
 
       labels = @container.getElementsByTagName 'label'
       if labels.length == 2
-        captionOn  = labels[0].textContent
-        captionOff = labels[1].textContent
+        captionOff  = labels[0].textContent
+        captionOn   = labels[1].textContent
       else
         console.warn '✖ No labels'
 
@@ -147,8 +148,8 @@ It is a plugin that show `radios buttons` like slide switch
       el.style.width = "#{@size}px" for el in @elements
       @container.style.width = (@size * 2)  + 'px'
 
-      # Height
-      # @knob.style.height = "#{sizes.cHeight}px"
+      # Aria
+      @container.setAttribute attrib, value for attrib, value of @aria
 
       # Drag and Tap
       #
@@ -277,8 +278,6 @@ It is a plugin that show `radios buttons` like slide switch
         'aria-labeledby' : labeledby
         'aria-required'  : required
 
-      @container.setAttribute attrib, value for attrib, value of @aria
-
       _SPL.build.bind(@)()
 
     toggle: (v) ->
@@ -369,9 +368,12 @@ It is a plugin that show `radios buttons` like slide switch
         # Remove attributes from radios
         radio.removeAttribute 'data-side' for radio in @radios
 
-        # # Remove all children from @container
-        # while @container.hasChildNodes()
-        #   @container.removeChild @container.lastChild
+        # Remove Event from @container
+        @container.removeEventListener 'keydown', @eventCall.keydown
+
+        # Destroy Hammer Events
+        @mk.destroy()
+        @mc.destroy()
 
         # Remove @elements from @container
         @container.removeChild el for el in @elements
@@ -382,13 +384,8 @@ It is a plugin that show `radios buttons` like slide switch
         @container.removeAttribute "style"
         @container.removeAttribute "data-sr#{@container.srGUID}"
 
-        # Remove Event from @container
-        @container.removeEventListener 'keydown', @eventCall.keydown
+        # Remove reference
         delete @container.srGUID
-
-        # Destroy Hammer Events
-        @mk.destroy()
-        @mc.destroy()
 
         @container = null
       return

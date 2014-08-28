@@ -2,7 +2,7 @@
 /*
 switch.js - SwitchSlide
 
-It is a plugin that show `radios buttons` like slide switch
+It is a plugin that show `radios buttons` like switch slide
 
 @author      Thiago Lagden <lagden [at] gmail.com>
 @copyright   Author
@@ -24,7 +24,7 @@ var __hasProp = {}.hasOwnProperty,
   instances = {};
   _SPL = {
     getTemplate: function() {
-      return ['<div class="switchSlide__opt switchSlide__opt--on">', '<span>{captionOn}</span></div>', '<div class="switchSlide__opt switchSlide__opt--off">', '<span>{captionOff}</span></div>', '<div class="switchSlide__knob"></div>'].join('');
+      return ['<div class="switchSlide__opt switchSlide__opt--off">', '<span>{captionOff}</span></div>', '<div class="switchSlide__opt switchSlide__opt--on">', '<span>{captionOn}</span></div>', '<div class="switchSlide__knob"></div>'].join('');
     },
     onToggle: function() {
       var radio, _i, _len, _ref;
@@ -52,31 +52,35 @@ var __hasProp = {}.hasOwnProperty,
       this.updatePosition();
     },
     onEnd: function(event) {
-      this.ligado = Boolean(Math.abs(this.transform.translate.x > this.size / 2));
+      this.ligado = Math.abs(this.transform.translate.x) > (this.size / 2);
       classie.remove(this.knob, 'is-dragging');
       _SPL.onToggle.bind(this)();
     },
     onTap: function(event) {
       var center, rect;
-      console.log('onTap', this.ligado);
       rect = this.container.getBoundingClientRect();
       center = rect.left + (rect.width / 2);
       this.ligado = event.center.x > center;
       _SPL.onToggle.bind(this)();
     },
     onKeydown: function(event) {
+      var dispara;
+      dispara = false;
       switch (event.keyCode) {
         case this.keyCodes.space:
           this.ligado = !this.ligado;
-          _SPL.onToggle.bind(this)();
+          dispara = true;
           break;
         case this.keyCodes.right:
           this.ligado = true;
-          _SPL.onToggle.bind(this)();
+          dispara = true;
           break;
         case this.keyCodes.left:
           this.ligado = false;
-          _SPL.onToggle.bind(this)();
+          dispara = true;
+      }
+      if (dispara) {
+        _SPL.onToggle.call(this);
       }
     },
     checked: function(radio) {
@@ -88,12 +92,12 @@ var __hasProp = {}.hasOwnProperty,
       radio.checked = false;
     },
     build: function() {
-      var captionOff, captionOn, content, el, labels, pan, r, sizes, tap, _i, _len, _ref;
+      var attrib, captionOff, captionOn, content, el, labels, pan, r, sizes, tap, value, _i, _len, _ref, _ref1;
       captionOn = captionOff = '';
       labels = this.container.getElementsByTagName('label');
       if (labels.length === 2) {
-        captionOn = labels[0].textContent;
-        captionOff = labels[1].textContent;
+        captionOff = labels[0].textContent;
+        captionOn = labels[1].textContent;
       } else {
         console.warn('✖ No labels');
       }
@@ -120,6 +124,11 @@ var __hasProp = {}.hasOwnProperty,
         el.style.width = "" + this.size + "px";
       }
       this.container.style.width = (this.size * 2) + 'px';
+      _ref1 = this.aria;
+      for (attrib in _ref1) {
+        value = _ref1[attrib];
+        this.container.setAttribute(attrib, value);
+      }
       tap = new Hammer.Tap;
       this.mc = new Hammer.Manager(this.container, {
         dragLockToAxis: true,
@@ -175,7 +184,7 @@ var __hasProp = {}.hasOwnProperty,
     __extends(SwitchSlide, _super);
 
     function SwitchSlide(container, required, labeledby) {
-      var attrib, id, idx, radio, radios, value, _i, _len, _ref;
+      var id, idx, radio, radios, _i, _len;
       if (false === (this instanceof SwitchSlide)) {
         return new SwitchSlide(container, required, labeledby);
       }
@@ -237,11 +246,6 @@ var __hasProp = {}.hasOwnProperty,
         'aria-labeledby': labeledby,
         'aria-required': required
       };
-      _ref = this.aria;
-      for (attrib in _ref) {
-        value = _ref[attrib];
-        this.container.setAttribute(attrib, value);
-      }
       _SPL.build.bind(this)();
     }
 
@@ -344,6 +348,9 @@ var __hasProp = {}.hasOwnProperty,
           radio = _ref[_i];
           radio.removeAttribute('data-side');
         }
+        this.container.removeEventListener('keydown', this.eventCall.keydown);
+        this.mk.destroy();
+        this.mc.destroy();
         _ref1 = this.elements;
         for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
           el = _ref1[_j];
@@ -355,10 +362,7 @@ var __hasProp = {}.hasOwnProperty,
         this.container.removeAttribute("class");
         this.container.removeAttribute("style");
         this.container.removeAttribute("data-sr" + this.container.srGUID);
-        this.container.removeEventListener('keydown', this.eventCall.keydown);
         delete this.container.srGUID;
-        this.mk.destroy();
-        this.mc.destroy();
         this.container = null;
       }
     };
