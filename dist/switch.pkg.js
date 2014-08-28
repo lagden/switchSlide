@@ -2997,7 +2997,7 @@ var __hasProp = {}.hasOwnProperty,
       this.updateAria();
       this.updateValor();
       this.updatePosition();
-      this.emitEvent('toggle', this.eventToggleParam);
+      this.emitToggle();
       _ref1 = this.radios;
       for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
         radio = _ref1[_j];
@@ -3222,6 +3222,10 @@ var __hasProp = {}.hasOwnProperty,
       _SPL.build.call(this);
       return;
     }
+
+    SwitchSlide.prototype.emitToggle = function() {
+      this.emitEvent('toggle', this.eventToggleParam);
+    };
 
     SwitchSlide.prototype.swap = function(v) {
       this.ligado = v != null ? v : !this.ligado;
