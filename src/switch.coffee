@@ -303,10 +303,7 @@ It is a plugin that show `radios buttons` like switch slide
 
       _SPL.build.call(@)
 
-    toggle: (v) ->
-      v = v || false
-      @ligado = v unless v is no
-
+    toggle: () ->
       if @ligado isnt null
         @active = true
         @transform.translate.x = if @ligado then @size else 0

@@ -3203,12 +3203,8 @@ var __hasProp = {}.hasOwnProperty,
       _SPL.build.call(this);
     }
 
-    SwitchSlide.prototype.toggle = function(v) {
+    SwitchSlide.prototype.toggle = function() {
       var a, b, radio, _i, _len, _ref;
-      v = v || false;
-      if (v !== false) {
-        this.ligado = v;
-      }
       if (this.ligado !== null) {
         this.active = true;
         this.transform.translate.x = this.ligado ? this.size : 0;
