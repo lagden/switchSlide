@@ -26,7 +26,7 @@
     <form id="frm" action="index.html" method="GET">
       <div class="mar-b-20">
         <div id="labelSexo" class="label">Qual é o sexo?</div>
-        <div class="switchSlide">
+        <div class="switchRadio">
           <label for="SexoF">Feminino</label>
           <input id="SexoF" type="radio" title="Feminino" name="sexo" value="F">
           <label for="SexoM">Masculino</label>
@@ -49,18 +49,53 @@
     <script src="switch.pkg.js"></script>
     <script>
       var cacheSwitches = [];
-      [].forEach.call(document.querySelectorAll('.switchSlide'), function(el, idx, arr) {
-          var sr = SwitchSlide(el, false, el.previousElementSibling.id);
-          
-          sr.on('toggle', function(obj) {
-              for (var i = 0, len = obj.radios.length; i < len; i++) {
-                  var r = obj.radios[i];
-                  console.log('toggle', r.id, r.checked);
+      var sr, sl;
+      
+      // Default
+      try {
+          sl = SwitchSlide('.switchSlide');
+          cacheSwitches.push(sl);
+      } catch (e) {
+          console.error('sl', e.message, e.name);
+      }
+      
+      // Custom
+      try {
+          var tpl = [
+              '<div class="widgetSlide">',
+              '<div class="widgetSlide__opt widgetSlide__opt--off">{captionOff}</div>',
+              '<div class="widgetSlide__knob"></div>',
+              '<div class="widgetSlide__opt widgetSlide__opt--on">{captionOn}</div>',
+              '</div>'
+          ].join('');
+          var el = document.querySelector('.switchRadio');
+          sr = SwitchSlide(el, {
+              required: el.previousElementSibling.id,
+              template: tpl,
+              negative: true,
+              initialize: 'switchRadio--initialized',
+              getTapElement: function() {
+                  return this.container
+              },
+              getDragElement: function() {
+                  return this.widget
+              },
+              setSizes: function() {
+                  this.sOn.style.width =
+                  this.sOff.style.width = this.width + "px";
+                  this.widget.style.width = (this.width * 2) + this.sizes.knob + 'px'
+                  this.container.style.width = this.width + this.sizes.knob + 'px'
               }
-              console.log(obj.value);
           });
-          
           cacheSwitches.push(sr);
+      } catch (e) {
+          console.error('sr', e.message, e.name);
+      }
+      
+      cacheSwitches.forEach(function(item, index, arr){
+          item.on('toggle', function(obj) {
+              console.log(obj);
+          });
       });
       
       var frm = document.querySelector('#frm');

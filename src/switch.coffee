@@ -25,6 +25,11 @@ It is a plugin that show `radios buttons` like switch slide
 
   'use strict'
 
+  # Extend object
+  extend = (a, b) ->
+    a[prop] = b[prop] for prop of b
+    return a
+
   # Transform property cross-browser
   transformProperty = getStyleProperty 'transform'
 
@@ -34,16 +39,21 @@ It is a plugin that show `radios buttons` like switch slide
   # internal store of all SwitchSlide intances
   instances = {}
 
+  # Exception
+  class SwitchSlideException
+    constructor: (@message, @name='SwitchSlideException') ->
+
   _SPL =
     # Template
     getTemplate: ->
-      [
-        '<div class="switchSlide__opt switchSlide__opt--off">'
-        '<span>{captionOff}</span></div>'
-        '<div class="switchSlide__opt switchSlide__opt--on">'
-        '<span>{captionOn}</span></div>'
-        '<div class="switchSlide__knob"></div>'
-      ].join ''
+      return '<div class="widgetSlide">
+        <div class="widgetSlide__opt widgetSlide__opt--off">
+        <span>{captionOff}</span>
+        </div>
+        <div class="widgetSlide__opt widgetSlide__opt--on">
+        <span>{captionOn}</span>
+        </div>
+        <div class="widgetSlide__knob"></div>'
 
     getSizes: ->
       clone = @container.cloneNode true
@@ -52,15 +62,15 @@ It is a plugin that show `radios buttons` like switch slide
 
       document.body.appendChild clone
 
-      sOnSelector  = '.switchSlide__opt--on'
-      sOffSelector = '.switchSlide__opt--off'
-
-      sOn  = clone.querySelector sOnSelector
-      sOff = clone.querySelector sOffSelector
+      widget = clone.querySelector @options.selectors.widget
+      sOff   = widget.querySelector @options.selectors.optOff
+      sOn    = widget.querySelector @options.selectors.optOn
+      knob   = widget.querySelector @options.selectors.knob
 
       sizes =
-        'sOn': sOn.clientWidth
         'sOff': sOff.clientWidth
+        'sOn' : sOn.clientWidth
+        'knob': knob.clientWidth
 
       document.body.removeChild clone
       clone = null
@@ -69,8 +79,9 @@ It is a plugin that show `radios buttons` like switch slide
     # Event Handlers
     onToggle: ->
       if @ligado isnt null
+        width = if @options.negative then (@width * -1) else @width
         @active = true
-        @transform.translate.x = if @ligado then @size else 0
+        @transform.translate.x = if @ligado then width else 0
 
         a = if @ligado then 1 else 0
         b = a^1
@@ -80,7 +91,7 @@ It is a plugin that show `radios buttons` like switch slide
 
       else
         @active = false
-        @transform.translate.x = @size / 2
+        @transform.translate.x = width / 2
         _SPL.unchecked(radio) for radio in @radios
 
       @isActive()
@@ -100,17 +111,22 @@ It is a plugin that show `radios buttons` like switch slide
       return
 
     onMove: (event) ->
-      v = (@size / 2) + event.deltaX
+      width = if @options.negative then (@width * -1) else @width
+      v = (width / 2) + event.deltaX
 
       if @ligado isnt null
-        v = if @ligado then @size + event.deltaX else event.deltaX
+        v = if @ligado then width + event.deltaX else event.deltaX
 
-      @transform.translate.x = Math.min @size, Math.max v, 0
+      if @options.negative
+        @transform.translate.x = Math.min 0, Math.max width, v
+      else
+        @transform.translate.x = Math.min width, Math.max v, 0
+
       @updatePosition()
       return
 
     onEnd: (el, event) ->
-      @ligado = Math.abs(@transform.translate.x) > (@size / 2)
+      @ligado = Math.abs(@transform.translate.x) > (@width / 2)
       classie.remove el, 'is-dragging'
       _SPL.onToggle.call(@)
       return
@@ -118,7 +134,10 @@ It is a plugin that show `radios buttons` like switch slide
     onTap: (el, event) ->
       rect = el.getBoundingClientRect()
       center = rect.left + (rect.width / 2)
-      @ligado = event.center.x > center
+      if @options.negative
+        @ligado = event.center.x < center
+      else
+        @ligado = event.center.x > center
 
       _SPL.onToggle.call(@)
       return
@@ -131,15 +150,33 @@ It is a plugin that show `radios buttons` like switch slide
           dispara = true
 
         when @keyCodes.right
-          @ligado = true
+          @ligado = !@options.negative
           dispara = true
 
         when @keyCodes.left
-          @ligado = false
+          @ligado = @options.negative
           dispara = true
 
       _SPL.onToggle.call(@) if dispara
       return
+
+    setElements: ->
+      @widget = @container.querySelector @options.selectors.widget
+      @sOff   = @widget.querySelector @options.selectors.optOn
+      @sOn    = @widget.querySelector @options.selectors.optOff
+      @knob   = @widget.querySelector @options.selectors.knob
+
+    setSizes: ->
+      @sOff.style.width = "#{@width}px"
+      @sOn.style.width  = "#{@width}px"
+      @knob.style.width = "#{@width}px"
+      @container.style.width = (@width * 2)  + 'px'
+
+    getTapElement: ->
+      return @widget
+
+    getDragElement: ->
+      return @knob
 
     checked: (radio) ->
       radio.setAttribute 'checked', ''
@@ -154,8 +191,8 @@ It is a plugin that show `radios buttons` like switch slide
     aria: (el) ->
       el.setAttribute attrib, value for attrib, value of @aria
 
-    build: () ->
-      captionOn = captionOff = ''
+    build: ->
+      captionOff = captionOn = ''
 
       labels = @container.getElementsByTagName 'label'
       if labels.length == 2
@@ -166,162 +203,166 @@ It is a plugin that show `radios buttons` like switch slide
 
       # Template Render
       r =
-        'captionOn'  : captionOn
         'captionOff' : captionOff
+        'captionOn'  : captionOn
 
-      content = @template.replace /\{(.*?)\}/g, (a, b) ->
+      content = @options.template.replace /\{(.*?)\}/g, (a, b) ->
         return r[b]
 
       @container.insertAdjacentHTML 'afterbegin', content
 
-      # Elements and Size elements
-      @elements = []
+      # Elements and size
+      @options.setElements.call(@)
 
-      sizes = _SPL.getSizes.call(@)
-      @size = Math.max sizes.sOn, sizes.sOff
-
-      @sOn   = @container.querySelector '.switchSlide__opt--on'
-      @sOff  = @container.querySelector '.switchSlide__opt--off'
-      @drag  = @container.querySelector '.switchSlide__knob'
-
-      @elements.push @sOn
-      @elements.push @sOff
-      @elements.push @drag
-
-      # Width
-      el.style.width = "#{@size}px" for el in @elements
-      @container.style.width = (@size * 2)  + 'px'
+      # Set widths
+      @sizes = _SPL.getSizes.call(@)
+      @sizes.max = Math.max @sizes.sOn, @sizes.sOff
+      @width = @sizes.max
+      @options.setSizes.call(@)
 
       # Aria
-      _SPL.aria.call(@, @container)
+      _SPL.aria.call(@, @widget)
 
       # Drag and Tap
-      #
-      # Container
+      tapElement = @options.getTapElement.call(@)
       tap = new Hammer.Tap
-      @mc = new Hammer.Manager @container,
+      @mc = new Hammer.Manager tapElement,
         dragLockToAxis: true
         dragBlockHorizontal: true
         preventDefault: true
 
       @mc.add tap
-      @mc.on 'tap', _SPL.onTap.bind(@, @container)
+      @mc.on 'tap', _SPL.onTap.bind(@, tapElement)
 
-      # Knob
+      dragElement = @options.getDragElement.call(@)
       pan = new Hammer.Pan direction: Hammer.DIRECTION_HORIZONTAL
-      @mk = new Hammer.Manager @drag,
+      @mk = new Hammer.Manager dragElement,
         dragLockToAxis: true
         dragBlockHorizontal: true
         preventDefault: true
 
       @mk.add pan
-      @mk.on 'panstart'  , _SPL.onStart.bind(@, @drag)
+      @mk.on 'panstart'  , _SPL.onStart.bind(@, dragElement)
       @mk.on 'pan'       , _SPL.onMove.bind(@)
-      @mk.on 'panend'    , _SPL.onEnd.bind(@, @drag)
-      @mk.on 'pancancel' , _SPL.onEnd.bind(@, @drag)
+      @mk.on 'panend'    , _SPL.onEnd.bind(@, dragElement)
+      @mk.on 'pancancel' , _SPL.onEnd.bind(@, dragElement)
 
       # Keyboard
       @eventCall =
         'keydown': _SPL.onKeydown.bind(@)
 
-      @container.addEventListener 'keydown', @eventCall.keydown
+      @widget.addEventListener 'keydown', @eventCall.keydown
 
       # Init
       _SPL.onToggle.call(@)
       return
 
-    initCheck: (container) ->
-      regex = /data-sr(\d+)/i
-      attribs = container.attributes
-      data = attrib.name for attrib in attribs when regex.test attrib.name
-      return true if !!data
-
   # Master
-  class SwitchSlide extends EventEmitter
-    constructor: (container, required, labeledby) ->
+  class SwitchSlide
+    constructor: (container, options) ->
 
       # Self instance
       if false is (@ instanceof SwitchSlide)
-        return new SwitchSlide(container, required, labeledby)
+        return new SwitchSlide container, options
 
-      labeledby = labeledby || null
-      required = required || false
+      # Container
+      if typeof container == 'string'
+        @container = document.querySelector container
+      else
+        @container = container
 
       # Check if component was initialized
-      if _SPL.initCheck container
-        console.warn 'The component has been initialized.'
-        return
+      initialized = SwitchSlide.data @container
+      if initialized instanceof SwitchSlide
+        return initialized
       else
         id = ++GUID
 
-        # Container
-        @container = container
-        @container.srGUID = id
-        instances[id] = @
-        container.setAttribute "data-sr#{id}", ''
+      @container.srGUID = id
+      instances[id] = @
+
+      # Options
+      @options =
+        labeledby      : null
+        required       : false
+        template       : _SPL.getTemplate()
+        setElements    : _SPL.setElements
+        setSizes       : _SPL.setSizes
+        getTapElement  : _SPL.getTapElement
+        getDragElement : _SPL.getDragElement
+        negative       : false
+        initialize     : 'switchSlide--initialized'
+        selectors:
+          widget : '.widgetSlide'
+          opts   : '.widgetSlide__opt'
+          optOff : '.widgetSlide__opt--off'
+          optOn  : '.widgetSlide__opt--on'
+          knob   : '.widgetSlide__knob'
+
+      extend @options, options
 
       # Radios
       @radios = []
       radios = @container.getElementsByTagName 'input'
       for radio, idx in radios when radio.type == 'radio'
-        radio.setAttribute 'data-side', idx
         @radios.push radio
 
+      # Exception
       if @radios.length != 2
-        console.error '✖ No radios'
-        return
+        throw new SwitchSlideException '✖ No radios'
+      else
+        # Initialize
+        classie.add @container, @options.initialize
 
-      # Template
-      @template = _SPL.getTemplate()
+        # Largura
+        @width = 0
 
-      # Largura
-      @size = 0
+        # Ligado, desligado ou nulo
+        @ligado = null
+        @ligado = false if @radios[0].checked and !@radios[1].checked
+        @ligado = true  if @radios[1].checked and !@radios[0].checked
 
-      # Ligado, desligado ou nulo
-      @ligado = null
-      @ligado = false if @radios[0].checked and !@radios[1].checked
-      @ligado = true  if @radios[1].checked and !@radios[0].checked
+        # Valor Inicial
+        @valor = null
+        @updateValor()
 
-      # Valor Inicial
-      @valor = null
-      @updateValor()
+        # Knob ativado
+        @active = false
 
-      # Knob ativado
-      @active = false
+        # Animation
+        @transform =
+          translate:
+            x: 0
 
-      # Animation
-      @transform =
-        translate:
-          x: 0
+        # Keyboard
+        @keyCodes =
+          'space' : 32
+          'left'  : 37
+          'right' : 39
 
-      # Keyboard
-      @keyCodes =
-        'space' : 32
-        'left'  : 37
-        'right' : 39
+        # Acessibilidade
+        @aria =
+          'tabindex'       : 0
+          'role'           : 'slider'
+          'aria-valuemin'  : @radios[0].title
+          'aria-valuemax'  : @radios[1].title
+          'aria-valuetext' : null
+          'aria-valuenow'  : null
+          'aria-labeledby' : @options.labeledby
+          'aria-required'  : @options.required
 
-      # Acessibilidade
-      @aria =
-        'tabindex'       : 0
-        'role'           : 'slider'
-        'aria-valuemin'  : @radios[0].title
-        'aria-valuemax'  : @radios[1].title
-        'aria-valuetext' : null
-        'aria-valuenow'  : null
-        'aria-labeledby' : labeledby
-        'aria-required'  : required
+        # Event toggle param
+        @eventToggleParam = [
+          'instance' : @
+          'radios'   : @radios
+          'value'    : @valor
+        ]
 
-      # Event toggle param
-      @eventToggleParam = [
-        'instance' : @
-        'radios'   : @radios
-        'value'    : @valor
-      ]
+        # Event change
+        @eventChange = new CustomEvent 'change'
 
-      # Event change
-      @eventChange = new CustomEvent 'change'
+        _SPL.build.call(@)
 
-      _SPL.build.call(@)
       return
 
     emitToggle: ->
@@ -340,14 +381,14 @@ It is a plugin that show `radios buttons` like switch slide
 
     isActive: ->
       method = if @active then 'add' else 'remove'
-      classie[method] @drag, 'is-active'
+      classie[method] @knob, 'is-active'
       return
 
     updateAria: ->
       if @ligado isnt null
         v = if @ligado is on then @radios[1].title else @radios[0].title
-        @container.setAttribute 'aria-valuenow', v
-        @container.setAttribute 'aria-valuetext', v
+        @widget.setAttribute 'aria-valuenow', v
+        @widget.setAttribute 'aria-valuetext', v
       return
 
     updateValor: ->
@@ -361,35 +402,38 @@ It is a plugin that show `radios buttons` like switch slide
 
     updatePosition: ->
       value = ["translate3d(#{@transform.translate.x}px, 0, 0)"]
-      @drag.style[transformProperty] = value.join " "
+      dragElement = @options.getDragElement.call(@)
+      dragElement.style[transformProperty] = value.join " "
       return
 
     destroy: ->
       if @container isnt null
-        # Remove attributes from radios
-        radio.removeAttribute 'data-side' for radio in @radios
 
         # Remove Event from @container
-        @container.removeEventListener 'keydown', @eventCall.keydown
+        @widget.removeEventListener 'keydown', @eventCall.keydown
 
         # Destroy Hammer Events
         @mk.destroy()
         @mc.destroy()
 
-        # Remove @elements from @container
-        @container.removeChild el for el in @elements
 
-        # Remove attributes from @container
-        @container.removeAttribute attr for attr of @aria
-        @container.removeAttribute "class"
+        # Remove @elements
+        @widget.removeAttribute attr for attr of @aria
+        if @container.contains @widget
+          @container.removeChild @widget
+
+        # Remove classes and attributes
+        classie.remove @container, @options.initialize
         @container.removeAttribute "style"
-        @container.removeAttribute "data-sr#{@container.srGUID}"
 
         # Remove reference
         delete @container.srGUID
 
         @container = null
       return
+
+  # Extends
+  extend SwitchSlide::, EventEmitter::
 
   # https://github.com/metafizzy/outlayer/blob/master/outlayer.js#L887
   #
