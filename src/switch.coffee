@@ -47,13 +47,13 @@ It is a plugin that show `radios buttons` like switch slide
     # Template
     getTemplate: ->
       return '<div class="widgetSlide">
-        <div class="widgetSlide__opt widgetSlide__opt--off">
-        <span>{captionOff}</span>
+        <div class="widgetSlide__opt widgetSlide__opt--min">
+        <span>{captionMin}</span>
         </div>
-        <div class="widgetSlide__opt widgetSlide__opt--on">
-        <span>{captionOn}</span>
-        </div>
-        <div class="widgetSlide__knob"></div>'
+        <div class="widgetSlide__knob"></div>
+        <div class="widgetSlide__opt widgetSlide__opt--max">
+        <span>{captionMax}</span>
+        </div>'
 
     getSizes: ->
       clone = @container.cloneNode true
@@ -63,13 +63,13 @@ It is a plugin that show `radios buttons` like switch slide
       document.body.appendChild clone
 
       widget = clone.querySelector @options.selectors.widget
-      sOff   = widget.querySelector @options.selectors.optOff
-      sOn    = widget.querySelector @options.selectors.optOn
+      sMin   = widget.querySelector @options.selectors.optMin
+      sMax   = widget.querySelector @options.selectors.optMax
       knob   = widget.querySelector @options.selectors.knob
 
       sizes =
-        'sOff': sOff.clientWidth
-        'sOn' : sOn.clientWidth
+        'sMin': sMin.clientWidth
+        'sMax': sMax.clientWidth
         'knob': knob.clientWidth
 
       document.body.removeChild clone
@@ -78,8 +78,9 @@ It is a plugin that show `radios buttons` like switch slide
 
     # Event Handlers
     onToggle: ->
+      width = if @options.negative then (@width * -1) else @width
+
       if @ligado isnt null
-        width = if @options.negative then (@width * -1) else @width
         @active = true
         @transform.translate.x = if @ligado then width else 0
 
@@ -162,13 +163,13 @@ It is a plugin that show `radios buttons` like switch slide
 
     setElements: ->
       @widget = @container.querySelector @options.selectors.widget
-      @sOff   = @widget.querySelector @options.selectors.optOn
-      @sOn    = @widget.querySelector @options.selectors.optOff
+      @sMin   = @widget.querySelector @options.selectors.optMax
+      @sMax   = @widget.querySelector @options.selectors.optMin
       @knob   = @widget.querySelector @options.selectors.knob
 
     setSizes: ->
-      @sOff.style.width = "#{@width}px"
-      @sOn.style.width  = "#{@width}px"
+      @sMin.style.width = "#{@width}px"
+      @sMax.style.width = "#{@width}px"
       @knob.style.width = "#{@width}px"
       @container.style.width = (@width * 2)  + 'px'
 
@@ -192,19 +193,19 @@ It is a plugin that show `radios buttons` like switch slide
       el.setAttribute attrib, value for attrib, value of @aria
 
     build: ->
-      captionOff = captionOn = ''
+      captionMin = captionMax = ''
 
       labels = @container.getElementsByTagName 'label'
       if labels.length == 2
-        captionOff  = labels[0].textContent
-        captionOn   = labels[1].textContent
+        captionMin  = labels[@a].textContent
+        captionMax  = labels[@b].textContent
       else
         console.warn '✖ No labels'
 
       # Template Render
       r =
-        'captionOff' : captionOff
-        'captionOn'  : captionOn
+        'captionMin' : captionMin
+        'captionMax' : captionMax
 
       content = @options.template.replace /\{(.*?)\}/g, (a, b) ->
         return r[b]
@@ -216,7 +217,7 @@ It is a plugin that show `radios buttons` like switch slide
 
       # Set widths
       @sizes = _SPL.getSizes.call(@)
-      @sizes.max = Math.max @sizes.sOn, @sizes.sOff
+      @sizes.max = Math.max @sizes.sMax, @sizes.sMin
       @width = @sizes.max
       @options.setSizes.call(@)
 
@@ -291,15 +292,20 @@ It is a plugin that show `radios buttons` like switch slide
         getTapElement  : _SPL.getTapElement
         getDragElement : _SPL.getDragElement
         negative       : false
+        swap           : false
         initialize     : 'switchSlide--initialized'
         selectors:
           widget : '.widgetSlide'
           opts   : '.widgetSlide__opt'
-          optOff : '.widgetSlide__opt--off'
-          optOn  : '.widgetSlide__opt--on'
+          optMin : '.widgetSlide__opt--min'
+          optMax : '.widgetSlide__opt--max'
           knob   : '.widgetSlide__knob'
 
       extend @options, options
+
+      # Binario
+      @a = if @options.swap then 1 else 0
+      @b = @a^1
 
       # Radios
       @radios = []
@@ -319,8 +325,8 @@ It is a plugin that show `radios buttons` like switch slide
 
         # Ligado, desligado ou nulo
         @ligado = null
-        @ligado = false if @radios[0].checked and !@radios[1].checked
-        @ligado = true  if @radios[1].checked and !@radios[0].checked
+        @ligado = false if @radios[@a].checked
+        @ligado = true  if @radios[@b].checked
 
         # Valor Inicial
         @valor = null
@@ -344,8 +350,8 @@ It is a plugin that show `radios buttons` like switch slide
         @aria =
           'tabindex'       : 0
           'role'           : 'slider'
-          'aria-valuemin'  : @radios[0].title
-          'aria-valuemax'  : @radios[1].title
+          'aria-valuemin'  : @radios[@a].title
+          'aria-valuemax'  : @radios[@b].title
           'aria-valuetext' : null
           'aria-valuenow'  : null
           'aria-labeledby' : @options.labeledby
@@ -386,7 +392,7 @@ It is a plugin that show `radios buttons` like switch slide
 
     updateAria: ->
       if @ligado isnt null
-        v = if @ligado is on then @radios[1].title else @radios[0].title
+        v = if @ligado is on then @radios[@b].title else @radios[@a].title
         @widget.setAttribute 'aria-valuenow', v
         @widget.setAttribute 'aria-valuetext', v
       return
@@ -394,7 +400,7 @@ It is a plugin that show `radios buttons` like switch slide
     updateValor: ->
       @valor = null
       if @ligado isnt null
-        @valor = if @ligado is on then @radios[1].value else @radios[0].value
+        @valor = if @ligado is on then @radios[@b].value else @radios[@a].value
 
       if @eventToggleParam?
         @eventToggleParam[0].value = @valor

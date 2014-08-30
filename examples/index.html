@@ -36,10 +36,10 @@
       <div class="mar-b-20">
         <div id="labelSwitch" class="label">Você achou esse switch bacana?</div>
         <div class="switchSlide">
+          <label for="sim">Sim</label>
+          <input id="sim" type="radio" title="Sim" name="switch" value="S">
           <label for="nao">Não</label>
           <input id="nao" type="radio" title="Não" name="switch" value="N">
-          <label for="sim">Sim</label>
-          <input id="sim" type="radio" title="Sim" name="switch" value="S" checked>
         </div>
       </div>
       <button type="submit">OK</button>
@@ -61,18 +61,11 @@
       
       // Custom
       try {
-          var tpl = [
-              '<div class="widgetSlide">',
-              '<div class="widgetSlide__opt widgetSlide__opt--off">{captionOff}</div>',
-              '<div class="widgetSlide__knob"></div>',
-              '<div class="widgetSlide__opt widgetSlide__opt--on">{captionOn}</div>',
-              '</div>'
-          ].join('');
           var el = document.querySelector('.switchRadio');
           sr = SwitchSlide(el, {
               required: el.previousElementSibling.id,
-              template: tpl,
               negative: true,
+              swap: true,
               initialize: 'switchRadio--initialized',
               getTapElement: function() {
                   return this.container
@@ -81,8 +74,8 @@
                   return this.widget
               },
               setSizes: function() {
-                  this.sOn.style.width =
-                  this.sOff.style.width = this.width + "px";
+                  this.sMax.style.width =
+                  this.sMin.style.width = this.width + "px";
                   this.widget.style.width = (this.width * 2) + this.sizes.knob + 'px'
                   this.container.style.width = this.width + this.sizes.knob + 'px'
               }
