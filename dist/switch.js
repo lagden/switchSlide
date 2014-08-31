@@ -52,7 +52,8 @@ It is a plugin that show `radios buttons` like switch slide
       sizes = {
         'sMin': sMin.clientWidth,
         'sMax': sMax.clientWidth,
-        'knob': knob.clientWidth
+        'knob': knob.clientWidth,
+        'max': Math.max(sMin.clientWidth, sMax.clientWidth)
       };
       document.body.removeChild(clone);
       clone = null;
@@ -60,11 +61,11 @@ It is a plugin that show `radios buttons` like switch slide
     },
     onToggle: function() {
       var a, b, radio, width, _i, _j, _len, _len1, _ref, _ref1;
-      width = this.options.negative ? this.width * -1 : this.width;
-      if (this.ligado !== null) {
+      width = this.options.negative ? -this.width : this.width;
+      if (this.shift !== null) {
         this.active = true;
-        this.transform.translate.x = this.ligado ? width : 0;
-        a = this.ligado ? 1 : 0;
+        this.transform.translate.x = this.shift ? width : 0;
+        a = this.shift ? 1 : 0;
         b = a ^ 1;
         _SPL.checked(this.radios[a]);
         _SPL.unchecked(this.radios[b]);
@@ -96,10 +97,10 @@ It is a plugin that show `radios buttons` like switch slide
     },
     onMove: function(event) {
       var v, width;
-      width = this.options.negative ? this.width * -1 : this.width;
+      width = this.options.negative ? -this.width : this.width;
       v = (width / 2) + event.deltaX;
-      if (this.ligado !== null) {
-        v = this.ligado ? width + event.deltaX : event.deltaX;
+      if (this.shift !== null) {
+        v = this.shift ? width + event.deltaX : event.deltaX;
       }
       if (this.options.negative) {
         this.transform.translate.x = Math.min(0, Math.max(width, v));
@@ -109,38 +110,36 @@ It is a plugin that show `radios buttons` like switch slide
       this.updatePosition();
     },
     onEnd: function(el, event) {
-      this.ligado = Math.abs(this.transform.translate.x) > (this.width / 2);
+      this.shift = Math.abs(this.transform.translate.x) > (this.width / 2);
       classie.remove(el, 'is-dragging');
       _SPL.onToggle.call(this);
     },
     onTap: function(el, event) {
-      var center, rect;
+      var a, b, data, rect;
       rect = el.getBoundingClientRect();
-      center = rect.left + (rect.width / 2);
-      if (this.options.negative) {
-        this.ligado = event.center.x < center;
-      } else {
-        this.ligado = event.center.x > center;
-      }
+      data = [rect.left + (rect.width / 2), event.center.x];
+      a = this.options.negative ? 1 : 0;
+      b = a ^ 1;
+      this.shift = data[a] < data[b];
       _SPL.onToggle.call(this);
     },
     onKeydown: function(event) {
-      var dispara;
-      dispara = false;
+      var trigger;
+      trigger = true;
       switch (event.keyCode) {
         case this.keyCodes.space:
-          this.ligado = !this.ligado;
-          dispara = true;
+          this.shift = !this.shift;
           break;
         case this.keyCodes.right:
-          this.ligado = !this.options.negative;
-          dispara = true;
+          this.shift = !this.options.negative;
           break;
         case this.keyCodes.left:
-          this.ligado = this.options.negative;
-          dispara = true;
+          this.shift = this.options.negative;
+          break;
+        default:
+          trigger = false;
       }
-      if (dispara) {
+      if (trigger) {
         _SPL.onToggle.call(this);
       }
     },
@@ -170,18 +169,8 @@ It is a plugin that show `radios buttons` like switch slide
       radio.removeAttribute('checked');
       radio.checked = false;
     },
-    aria: function(el) {
-      var attrib, value, _ref, _results;
-      _ref = this.aria;
-      _results = [];
-      for (attrib in _ref) {
-        value = _ref[attrib];
-        _results.push(el.setAttribute(attrib, value));
-      }
-      return _results;
-    },
     build: function() {
-      var captionMax, captionMin, content, dragElement, labels, pan, r, tap, tapElement;
+      var attrib, captionMax, captionMin, content, dragElement, labels, pan, r, tap, tapElement, value, _ref;
       captionMin = captionMax = '';
       labels = this.container.getElementsByTagName('label');
       if (labels.length === 2) {
@@ -200,10 +189,13 @@ It is a plugin that show `radios buttons` like switch slide
       this.container.insertAdjacentHTML('afterbegin', content);
       this.options.setElements.call(this);
       this.sizes = _SPL.getSizes.call(this);
-      this.sizes.max = Math.max(this.sizes.sMax, this.sizes.sMin);
       this.width = this.sizes.max;
       this.options.setSizes.call(this);
-      _SPL.aria.call(this, this.widget);
+      _ref = this.aria;
+      for (attrib in _ref) {
+        value = _ref[attrib];
+        this.widget.setAttribute(attrib, value);
+      }
       tapElement = this.options.getTapElement.call(this);
       tap = new Hammer.Tap;
       this.mc = new Hammer.Manager(tapElement, {
@@ -288,16 +280,16 @@ It is a plugin that show `radios buttons` like switch slide
       } else {
         classie.add(this.container, this.options.initialize);
         this.width = 0;
-        this.ligado = null;
+        this.shift = null;
         if (this.radios[this.a].checked) {
-          this.ligado = false;
+          this.shift = false;
         }
         if (this.radios[this.b].checked) {
-          this.ligado = true;
+          this.shift = true;
         }
         this.valor = null;
         this.updateValor();
-        this.active = false;
+        this.active = null;
         this.transform = {
           translate: {
             x: 0
@@ -318,7 +310,7 @@ It is a plugin that show `radios buttons` like switch slide
           'aria-labeledby': this.options.labeledby,
           'aria-required': this.options.required
         };
-        this.eventToggleParam = [
+        this.eventToggleParams = [
           {
             'instance': this,
             'radios': this.radios,
@@ -332,29 +324,31 @@ It is a plugin that show `radios buttons` like switch slide
     }
 
     SwitchSlide.prototype.emitToggle = function() {
-      this.emitEvent('toggle', this.eventToggleParam);
+      this.emitEvent('toggle', this.eventToggleParams);
     };
 
     SwitchSlide.prototype.swap = function(v) {
-      this.ligado = v != null ? v : !this.ligado;
+      this.shift = v != null ? v : !this.shift;
       _SPL.onToggle.call(this);
     };
 
     SwitchSlide.prototype.reset = function() {
-      this.ligado = null;
+      this.shift = null;
       _SPL.onToggle.call(this);
     };
 
     SwitchSlide.prototype.isActive = function() {
       var method;
-      method = this.active ? 'add' : 'remove';
-      classie[method](this.knob, 'is-active');
+      if (this.active !== null) {
+        method = this.active ? 'add' : 'remove';
+        classie[method](this.knob, 'is-active');
+      }
     };
 
     SwitchSlide.prototype.updateAria = function() {
       var v;
-      if (this.ligado !== null) {
-        v = this.ligado === true ? this.radios[this.b].title : this.radios[this.a].title;
+      if (this.shift !== null) {
+        v = this.shift === true ? this.radios[this.b].title : this.radios[this.a].title;
         this.widget.setAttribute('aria-valuenow', v);
         this.widget.setAttribute('aria-valuetext', v);
       }
@@ -362,11 +356,11 @@ It is a plugin that show `radios buttons` like switch slide
 
     SwitchSlide.prototype.updateValor = function() {
       this.valor = null;
-      if (this.ligado !== null) {
-        this.valor = this.ligado === true ? this.radios[this.b].value : this.radios[this.a].value;
+      if (this.shift !== null) {
+        this.valor = this.shift === true ? this.radios[this.b].value : this.radios[this.a].value;
       }
-      if (this.eventToggleParam != null) {
-        this.eventToggleParam[0].value = this.valor;
+      if (this.eventToggleParams != null) {
+        this.eventToggleParams[0].value = this.valor;
       }
     };
 

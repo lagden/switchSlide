@@ -8,7 +8,6 @@ concat      = require 'gulp-concat'
 filter      = require 'gulp-filter'
 jade        = require 'gulp-jade'
 sass        = require 'gulp-ruby-sass'
-uglify      = require 'gulp-uglifyjs'
 util        = require 'gulp-util'
 
 del         = require 'del'
@@ -51,14 +50,6 @@ map =
     ]
     out:  'switch.pkg.js'
     dest: 'dist/'
-  uglify:
-    src:
-      file: 'dist/switch.js'
-      pkg:  'dist/switch.pkg.js'
-    out:
-      file: 'switch.min.js'
-      pkg:  'switch.pkg.min.js'
-    dest: 'dist/'
 
 gulp.task 'jade', ->
   gulp.src map.jade.src
@@ -70,8 +61,6 @@ gulp.task 'sass', ->
   gulp.src map.sass.src
     .pipe sass
       trace         : true
-      sourcemap     : true
-      sourcemapPath : '../dist'
       style         : 'compressed'
       noCache       : true
     .pipe prefix AUTOPREFIXER_BROWSERS
@@ -94,16 +83,6 @@ gulp.task 'pkg', ->
     .pipe concat map.pkg.out
     .pipe gulp.dest map.pkg.dest
     .pipe reload stream: true
-
-gulp.task 'uglify-file', ->
-  gulp.src map.uglify.src.file
-    .pipe uglify map.uglify.out.file, outSourceMap: true
-    .pipe gulp.dest map.uglify.dest
-
-gulp.task 'uglify-pkg', ->
-  gulp.src map.uglify.src.pkg
-    .pipe uglify map.uglify.out.pkg, outSourceMap: true
-    .pipe gulp.dest map.uglify.dest
 
 gulp.task 'clean', ->
   del map.clean.src, ->
@@ -134,6 +113,5 @@ gulp.task 'default', ->
               ['jade', 'sass'],
               'lint',
               'coffee',
-              'pkg',
-              ['uglify-file', 'uglify-pkg']
+              'pkg'
   return

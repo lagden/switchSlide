@@ -24,7 +24,7 @@ html(lang='en')
         form#frm(action='index.html', method='GET')
             .mar-b-20
                 #labelSexo.label Qual é o sexo?
-                .switchRadio
+                .switchCustom
                     label(for='SexoF') Feminino
                     input#SexoF(type='radio', title='Feminino', name='sexo', value='F')
                     label(for='SexoM') Masculino
@@ -57,12 +57,12 @@ html(lang='en')
 
             // Custom
             try {
-                var el = document.querySelector('.switchRadio');
+                var el = document.querySelector('.switchCustom');
                 sr = SwitchSlide(el, {
                     required: el.previousElementSibling.id,
                     negative: true,
                     swap: true,
-                    initialize: 'switchRadio--initialized',
+                    initialize: 'switchCustom--initialized',
                     getTapElement: function() {
                         return this.container
                     },
@@ -81,12 +81,14 @@ html(lang='en')
                 console.error('sr', e.message, e.name);
             }
 
+            // Events
             cacheSwitches.forEach(function(item, index, arr){
                 item.on('toggle', function(obj) {
-                    console.log(obj);
+                    console.log(Object.keys(obj));
                 });
             });
 
+            // Reset
             var frm = document.querySelector('#frm');
             frm.addEventListener('reset', function(event) {
                 for (var i = 0, len = cacheSwitches.length; i < len; i++) {
@@ -94,6 +96,7 @@ html(lang='en')
                 }
             });
 
+            // Destroy
             var btn = document.querySelector('#destroy');
             btn.addEventListener('click', function(event) {
                 for (var i = 0, len = cacheSwitches.length; i < len; i++) {

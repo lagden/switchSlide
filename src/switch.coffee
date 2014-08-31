@@ -33,16 +33,17 @@ It is a plugin that show `radios buttons` like switch slide
   # Transform property cross-browser
   transformProperty = getStyleProperty 'transform'
 
-  # globally unique identifiers
+  # Globally unique identifiers
   GUID = 0
 
-  # internal store of all SwitchSlide intances
+  # Internal store of all SwitchSlide intances
   instances = {}
 
   # Exception
   class SwitchSlideException
     constructor: (@message, @name='SwitchSlideException') ->
 
+  # Private Methods
   _SPL =
     # Template
     getTemplate: ->
@@ -55,6 +56,7 @@ It is a plugin that show `radios buttons` like switch slide
         <span>{captionMax}</span>
         </div>'
 
+    # Size of elements
     getSizes: ->
       clone = @container.cloneNode true
       clone.style.visibility = 'hidden'
@@ -71,21 +73,23 @@ It is a plugin that show `radios buttons` like switch slide
         'sMin': sMin.clientWidth
         'sMax': sMax.clientWidth
         'knob': knob.clientWidth
+        'max' : Math.max sMin.clientWidth, sMax.clientWidth
 
       document.body.removeChild clone
       clone = null
       return sizes
 
-    # Event Handlers
+    # Event handler
+    #
     onToggle: ->
-      width = if @options.negative then (@width * -1) else @width
+      width = if @options.negative then -@width else @width
 
-      if @ligado isnt null
+      if @shift isnt null
         @active = true
-        @transform.translate.x = if @ligado then width else 0
+        @transform.translate.x = if @shift then width else 0
 
-        a = if @ligado then 1 else 0
-        b = a^1
+        a = if @shift then 1 else 0
+        b = a ^ 1
 
         _SPL.checked(@radios[a])
         _SPL.unchecked(@radios[b])
@@ -112,11 +116,11 @@ It is a plugin that show `radios buttons` like switch slide
       return
 
     onMove: (event) ->
-      width = if @options.negative then (@width * -1) else @width
+      width = if @options.negative then -@width else @width
       v = (width / 2) + event.deltaX
 
-      if @ligado isnt null
-        v = if @ligado then width + event.deltaX else event.deltaX
+      if @shift isnt null
+        v = if @shift then width + event.deltaX else event.deltaX
 
       if @options.negative
         @transform.translate.x = Math.min 0, Math.max width, v
@@ -127,72 +131,77 @@ It is a plugin that show `radios buttons` like switch slide
       return
 
     onEnd: (el, event) ->
-      @ligado = Math.abs(@transform.translate.x) > (@width / 2)
+      @shift = Math.abs(@transform.translate.x) > (@width / 2)
       classie.remove el, 'is-dragging'
       _SPL.onToggle.call(@)
       return
 
     onTap: (el, event) ->
       rect = el.getBoundingClientRect()
-      center = rect.left + (rect.width / 2)
-      if @options.negative
-        @ligado = event.center.x < center
-      else
-        @ligado = event.center.x > center
+      data = [
+        rect.left + (rect.width / 2)
+        event.center.x
+      ]
+      a = if @options.negative then 1 else 0
+      b = a ^ 1
+
+      @shift = data[a] < data[b]
 
       _SPL.onToggle.call(@)
       return
 
     onKeydown: (event) ->
-      dispara = false
+      trigger = true
       switch event.keyCode
         when @keyCodes.space
-          @ligado = !@ligado
-          dispara = true
-
+          @shift = !@shift
         when @keyCodes.right
-          @ligado = !@options.negative
-          dispara = true
-
+          @shift = !@options.negative
         when @keyCodes.left
-          @ligado = @options.negative
-          dispara = true
+          @shift = @options.negative
+        else
+          trigger = false
 
-      _SPL.onToggle.call(@) if dispara
+      _SPL.onToggle.call(@) if trigger
       return
 
+    # Set Elements
     setElements: ->
       @widget = @container.querySelector @options.selectors.widget
       @sMin   = @widget.querySelector @options.selectors.optMax
       @sMax   = @widget.querySelector @options.selectors.optMin
       @knob   = @widget.querySelector @options.selectors.knob
 
+    # Set Widths
     setSizes: ->
       @sMin.style.width = "#{@width}px"
       @sMax.style.width = "#{@width}px"
       @knob.style.width = "#{@width}px"
       @container.style.width = (@width * 2)  + 'px'
 
+    # Listener Tap Event
     getTapElement: ->
       return @widget
 
+    # Listener Drag Event
     getDragElement: ->
       return @knob
 
+    # Radio checked
     checked: (radio) ->
       radio.setAttribute 'checked', ''
       radio.checked = true
       return
 
+    # Radio unchecked
     unchecked: (radio) ->
       radio.removeAttribute 'checked'
       radio.checked = false
       return
 
-    aria: (el) ->
-      el.setAttribute attrib, value for attrib, value of @aria
-
+    # Build widget
     build: ->
+      # Caption
       captionMin = captionMax = ''
 
       labels = @container.getElementsByTagName 'label'
@@ -217,14 +226,13 @@ It is a plugin that show `radios buttons` like switch slide
 
       # Set widths
       @sizes = _SPL.getSizes.call(@)
-      @sizes.max = Math.max @sizes.sMax, @sizes.sMin
       @width = @sizes.max
       @options.setSizes.call(@)
 
       # Aria
-      _SPL.aria.call(@, @widget)
+      @widget.setAttribute attrib, value for attrib, value of @aria
 
-      # Drag and Tap
+      # Tap Event
       tapElement = @options.getTapElement.call(@)
       tap = new Hammer.Tap
       @mc = new Hammer.Manager tapElement,
@@ -235,6 +243,7 @@ It is a plugin that show `radios buttons` like switch slide
       @mc.add tap
       @mc.on 'tap', _SPL.onTap.bind(@, tapElement)
 
+      # Drag Event
       dragElement = @options.getDragElement.call(@)
       pan = new Hammer.Pan direction: Hammer.DIRECTION_HORIZONTAL
       @mk = new Hammer.Manager dragElement,
@@ -248,17 +257,15 @@ It is a plugin that show `radios buttons` like switch slide
       @mk.on 'panend'    , _SPL.onEnd.bind(@, dragElement)
       @mk.on 'pancancel' , _SPL.onEnd.bind(@, dragElement)
 
-      # Keyboard
-      @eventCall =
-        'keydown': _SPL.onKeydown.bind(@)
-
+      # Keyboard Event
+      @eventCall = 'keydown': _SPL.onKeydown.bind(@)
       @widget.addEventListener 'keydown', @eventCall.keydown
 
       # Init
       _SPL.onToggle.call(@)
       return
 
-  # Master
+  # Class
   class SwitchSlide
     constructor: (container, options) ->
 
@@ -303,9 +310,9 @@ It is a plugin that show `radios buttons` like switch slide
 
       extend @options, options
 
-      # Binario
+      # Swap
       @a = if @options.swap then 1 else 0
-      @b = @a^1
+      @b = @a ^ 1
 
       # Radios
       @radios = []
@@ -320,20 +327,20 @@ It is a plugin that show `radios buttons` like switch slide
         # Initialize
         classie.add @container, @options.initialize
 
-        # Largura
+        # Width
         @width = 0
 
-        # Ligado, desligado ou nulo
-        @ligado = null
-        @ligado = false if @radios[@a].checked
-        @ligado = true  if @radios[@b].checked
+        # on, off or null
+        @shift = null
+        @shift = off if @radios[@a].checked
+        @shift = on  if @radios[@b].checked
 
-        # Valor Inicial
+        # Initial value
         @valor = null
         @updateValor()
 
-        # Knob ativado
-        @active = false
+        # Active - Show elements when a side is selected
+        @active = null
 
         # Animation
         @transform =
@@ -346,7 +353,7 @@ It is a plugin that show `radios buttons` like switch slide
           'left'  : 37
           'right' : 39
 
-        # Acessibilidade
+        # Accessibility
         @aria =
           'tabindex'       : 0
           'role'           : 'slider'
@@ -357,8 +364,8 @@ It is a plugin that show `radios buttons` like switch slide
           'aria-labeledby' : @options.labeledby
           'aria-required'  : @options.required
 
-        # Event toggle param
-        @eventToggleParam = [
+        # Event parameters
+        @eventToggleParams = [
           'instance' : @
           'radios'   : @radios
           'value'    : @valor
@@ -371,59 +378,67 @@ It is a plugin that show `radios buttons` like switch slide
 
       return
 
+    # Trigger event
     emitToggle: ->
-      @.emitEvent 'toggle', @eventToggleParam
+      @.emitEvent 'toggle', @eventToggleParams
       return
 
+    # Swap value
     swap: (v) ->
-      @ligado = if v? then v else !@ligado
+      @shift = if v? then v else !@shift
       _SPL.onToggle.call(@)
       return
 
+    # Reset value
     reset: ->
-      @ligado = null
+      @shift = null
       _SPL.onToggle.call(@)
       return
 
+    # Show or hide element
     isActive: ->
-      method = if @active then 'add' else 'remove'
-      classie[method] @knob, 'is-active'
+      if @active isnt null
+        method = if @active then 'add' else 'remove'
+        classie[method] @knob, 'is-active'
       return
 
+    # Update WAI-ARIA - Accessibility
     updateAria: ->
-      if @ligado isnt null
-        v = if @ligado is on then @radios[@b].title else @radios[@a].title
+      if @shift isnt null
+        v = if @shift is on then @radios[@b].title else @radios[@a].title
         @widget.setAttribute 'aria-valuenow', v
         @widget.setAttribute 'aria-valuetext', v
       return
 
+    # Update current value
     updateValor: ->
       @valor = null
-      if @ligado isnt null
-        @valor = if @ligado is on then @radios[@b].value else @radios[@a].value
+      if @shift isnt null
+        @valor = if @shift is on then @radios[@b].value else @radios[@a].value
 
-      if @eventToggleParam?
-        @eventToggleParam[0].value = @valor
+      if @eventToggleParams?
+        @eventToggleParams[0].value = @valor
       return
 
+    # Update element position
     updatePosition: ->
       value = ["translate3d(#{@transform.translate.x}px, 0, 0)"]
       dragElement = @options.getDragElement.call(@)
       dragElement.style[transformProperty] = value.join " "
       return
 
+    # Destroy widget
     destroy: ->
       if @container isnt null
 
-        # Remove Event from @container
+        # Remove Keyboard event
         @widget.removeEventListener 'keydown', @eventCall.keydown
 
         # Destroy Hammer Events
         @mk.destroy()
         @mc.destroy()
 
-
-        # Remove @elements
+        # Remove @widget
         @widget.removeAttribute attr for attr of @aria
         if @container.contains @widget
           @container.removeChild @widget

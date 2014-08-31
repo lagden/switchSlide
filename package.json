@@ -3,7 +3,7 @@
   "title": "Slide Switch",
   "description": "It is a plugin that show radios buttons like slide switch",
   "main": "./dist/switch.js",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": "Thiago Lagden <lagden@gmail.com>",
   "repository": {
     "type": "git",
@@ -25,7 +25,6 @@
     "gulp-filter": "^0.5.0",
     "gulp-jade": "^0.6.1",
     "gulp-ruby-sass": "^0.6.0",
-    "gulp-uglifyjs": "^0.4.2",
     "gulp-util": "^2.2.20",
     "run-sequence": "^0.3.6"
   },
