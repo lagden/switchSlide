@@ -6,7 +6,7 @@ It is a plugin that show `radios buttons` like switch slide
 ## Installation
 
     bower install switch-slide
-    
+
 #### Warning for IE
 
 Required [CustomEvent](https://developer.mozilla.org/en-US/docs/Web/API/CustomEvent#Polyfill) polyfill to avoid error.
@@ -18,10 +18,10 @@ Required [CustomEvent](https://developer.mozilla.org/en-US/docs/Web/API/CustomEv
 ```html
 <div id="labelSwitch">Did you think good?</div>
 <div class="switchSlide">
-    <label for="sim">Yep</label>
-    <input id="sim" type="radio" title="Yep" name="switch" value="s">
-    <label for="nao">Nope</label>
-    <input id="nao" type="radio" title="Nope" name="switch" value="n">
+    <label for="nope">Nope</label>
+    <input id="nope" type="radio" title="Nope" name="good" value="n">
+    <label for="yepi">Yepi</label>
+    <input id="yepi" type="radio" title="Yepi" name="good" value="y">
 </div>
 ```
 
@@ -29,15 +29,15 @@ Required [CustomEvent](https://developer.mozilla.org/en-US/docs/Web/API/CustomEv
 
 ```javascript
 [].forEach.call(document.querySelectorAll('.switchSlide'), function(el, idx, arr) {
-    require('switch-slide/switch')(el, false, el.previousElementSibling.id);
+    require('switch-slide/switch')(el);
 });
 ```
 
 **Global**
 
 ```javascript
-[].forEach.call(document.querySelectorAll('.switchRadio'), function(el, idx, arr) {
-    new SwitchSlide(el, false, el.previousElementSibling.id);
+[].forEach.call(document.querySelectorAll('.switchSlide'), function(el, idx, arr) {
+    new SwitchSlide(el);
 });
 ```
 
