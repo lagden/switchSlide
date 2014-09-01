@@ -3114,7 +3114,7 @@ It is a plugin that show `radios buttons` like switch slide
         'captionMin': captionMin,
         'captionMax': captionMax
       };
-      content = this.options.template.replace(/\{(.*?)\}/g, function(a, b) {
+      content = this.options.template().replace(/\{(.*?)\}/g, function(a, b) {
         return r[b];
       });
       this.container.insertAdjacentHTML('afterbegin', content);
@@ -3179,7 +3179,7 @@ It is a plugin that show `radios buttons` like switch slide
       this.options = {
         labeledby: null,
         required: false,
-        template: _SPL.getTemplate(),
+        template: _SPL.getTemplate,
         setElements: _SPL.setElements,
         setSizes: _SPL.setSizes,
         getTapElement: _SPL.getTapElement,
