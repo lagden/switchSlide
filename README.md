@@ -16,7 +16,7 @@ Required [CustomEvent](https://developer.mozilla.org/en-US/docs/Web/API/CustomEv
 ```Coffee
 labeledby      : null
 required       : false
-template       : _SPL.getTemplate()
+template       : _SPL.getTemplate
 setElements    : _SPL.setElements
 setSizes       : _SPL.setSizes
 getTapElement  : _SPL.getTapElement
