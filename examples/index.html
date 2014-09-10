@@ -37,7 +37,7 @@
         <div id="labelSwitch" class="label">Você achou esse switch bacana?</div>
         <div class="switchSlide">
           <label for="sim">Sim</label>
-          <input id="sim" type="radio" title="Sim" name="switch" value="S">
+          <input id="sim" type="radio" title="Sim" name="switch" value="S" checked>
           <label for="nao">Não</label>
           <input id="nao" type="radio" title="Não" name="switch" value="N">
         </div>
@@ -65,7 +65,7 @@
           sr = SwitchSlide(el, {
               required: el.previousElementSibling.id,
               negative: true,
-              swap: true,
+              swapOrder: true,
               initialize: 'switchCustom--initialized',
               getTapElement: function() {
                   return this.container
@@ -87,8 +87,13 @@
       
       // Events
       cacheSwitches.forEach(function(item, index, arr){
+          var i, len, r;
           item.on('toggle', function(obj) {
-              console.log(Object.keys(obj));
+              console.log(obj);
+              for (i = 0, len = obj.radios.length; i < len; i++) {
+                r = obj.radios[i]
+                console.log(r);
+              }
           });
       });
       

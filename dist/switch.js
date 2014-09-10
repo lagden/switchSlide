@@ -15,13 +15,32 @@ It is a plugin that show `radios buttons` like switch slide
   }
 })(this, function(getStyleProperty, classie, EventEmitter, Hammer) {
   'use strict';
-  var GUID, SwitchSlide, SwitchSlideException, extend, instances, transformProperty, _SPL;
+  var GUID, SwitchSlide, SwitchSlideException, extend, instances, isElement, removeRecursive, transformProperty, _SPL;
   extend = function(a, b) {
     var prop;
     for (prop in b) {
       a[prop] = b[prop];
     }
     return a;
+  };
+  isElement = function(obj) {
+    if (typeof HTMLElement === "object") {
+      return obj instanceof HTMLElement;
+    } else {
+      return obj && typeof obj === "object" && obj.nodeType === 1 && typeof obj.nodeName === "string";
+    }
+  };
+  removeRecursive = function(parent) {
+    var el;
+    while (parent.hasChildNodes()) {
+      el = parent.lastChild;
+      if (el.hasChildNodes()) {
+        removeRecursive(el);
+      } else {
+        parent.removeChild(el);
+      }
+      el = null;
+    }
   };
   transformProperty = getStyleProperty('transform');
   GUID = 0;
@@ -37,26 +56,31 @@ It is a plugin that show `radios buttons` like switch slide
   })();
   _SPL = {
     getTemplate: function() {
-      return '<div class="widgetSlide"> <div class="widgetSlide__opt widgetSlide__opt--min"> <span>{captionMin}</span> </div> <div class="widgetSlide__knob"></div> <div class="widgetSlide__opt widgetSlide__opt--max"> <span>{captionMax}</span> </div>';
+      return '<div class="widgetSlide"> <div class="widgetSlide__opt widgetSlide__opt--min"> <span>{captionMin}</span> </div> <div class="widgetSlide__knob"></div> <div class="widgetSlide__opt widgetSlide__opt--max"> <span>{captionMax}</span> </div> </div>';
     },
-    getSizes: function() {
+    getSizes: function(container, options) {
       var clone, knob, sMax, sMin, sizes, widget;
-      clone = this.container.cloneNode(true);
+      clone = container.cloneNode(true);
       clone.style.visibility = 'hidden';
       clone.style.position = 'absolute';
       document.body.appendChild(clone);
-      widget = clone.querySelector(this.options.selectors.widget);
-      sMin = widget.querySelector(this.options.selectors.optMin);
-      sMax = widget.querySelector(this.options.selectors.optMax);
-      knob = widget.querySelector(this.options.selectors.knob);
+      widget = clone.querySelector(options.selectors.widget);
+      sMin = widget.querySelector(options.selectors.optMin);
+      sMax = widget.querySelector(options.selectors.optMax);
+      knob = widget.querySelector(options.selectors.knob);
       sizes = {
         'sMin': sMin.clientWidth,
         'sMax': sMax.clientWidth,
         'knob': knob.clientWidth,
         'max': Math.max(sMin.clientWidth, sMax.clientWidth)
       };
+      removeRecursive(clone);
       document.body.removeChild(clone);
       clone = null;
+      widget = null;
+      sMin = null;
+      sMax = null;
+      knob = null;
       return sizes;
     },
     onToggle: function() {
@@ -65,7 +89,7 @@ It is a plugin that show `radios buttons` like switch slide
       if (this.shift !== null) {
         this.active = true;
         this.transform.translate.x = this.shift ? width : 0;
-        a = this.shift ? 1 : 0;
+        a = this.shift ? this.b : this.a;
         b = a ^ 1;
         _SPL.checked(this.radios[a]);
         _SPL.unchecked(this.radios[b]);
@@ -90,10 +114,11 @@ It is a plugin that show `radios buttons` like switch slide
           radio.dispatchEvent(this.eventChange);
         }
       }
+      width = a = b = null;
     },
-    onStart: function(el, event) {
-      el.focus();
-      classie.add(el, 'is-dragging');
+    onStart: function(event) {
+      this.dragElement.focus();
+      classie.add(this.dragElement, 'is-dragging');
     },
     onMove: function(event) {
       var v, width;
@@ -108,20 +133,22 @@ It is a plugin that show `radios buttons` like switch slide
         this.transform.translate.x = Math.min(width, Math.max(v, 0));
       }
       this.updatePosition();
+      width = v = null;
     },
-    onEnd: function(el, event) {
+    onEnd: function(event) {
       this.shift = Math.abs(this.transform.translate.x) > (this.width / 2);
-      classie.remove(el, 'is-dragging');
+      classie.remove(this.dragElement, 'is-dragging');
       _SPL.onToggle.call(this);
     },
-    onTap: function(el, event) {
+    onTap: function(event) {
       var a, b, data, rect;
-      rect = el.getBoundingClientRect();
+      rect = this.tapElement.getBoundingClientRect();
       data = [rect.left + (rect.width / 2), event.center.x];
       a = this.options.negative ? 1 : 0;
       b = a ^ 1;
       this.shift = data[a] < data[b];
       _SPL.onToggle.call(this);
+      rect = data = a = b = null;
     },
     onKeydown: function(event) {
       var trigger;
@@ -142,18 +169,19 @@ It is a plugin that show `radios buttons` like switch slide
       if (trigger) {
         _SPL.onToggle.call(this);
       }
+      trigger = null;
     },
-    setElements: function() {
+    getElements: function() {
       this.widget = this.container.querySelector(this.options.selectors.widget);
       this.sMin = this.widget.querySelector(this.options.selectors.optMax);
       this.sMax = this.widget.querySelector(this.options.selectors.optMin);
-      return this.knob = this.widget.querySelector(this.options.selectors.knob);
+      this.knob = this.widget.querySelector(this.options.selectors.knob);
     },
     setSizes: function() {
       this.sMin.style.width = "" + this.width + "px";
       this.sMax.style.width = "" + this.width + "px";
       this.knob.style.width = "" + this.width + "px";
-      return this.container.style.width = (this.width * 2) + 'px';
+      this.container.style.width = (this.width * 2) + 'px';
     },
     getTapElement: function() {
       return this.widget;
@@ -170,7 +198,7 @@ It is a plugin that show `radios buttons` like switch slide
       radio.checked = false;
     },
     build: function() {
-      var attrib, captionMax, captionMin, content, dragElement, labels, pan, r, tap, tapElement, value, _ref;
+      var attrib, captionMax, captionMin, content, labels, m, o, r, value, _i, _j, _len, _len1, _ref, _ref1, _ref2;
       captionMin = captionMax = '';
       labels = this.container.getElementsByTagName('label');
       if (labels.length === 2) {
@@ -187,8 +215,9 @@ It is a plugin that show `radios buttons` like switch slide
         return r[b];
       });
       this.container.insertAdjacentHTML('afterbegin', content);
-      this.options.setElements.call(this);
-      this.sizes = _SPL.getSizes.call(this);
+      labels = captionMin = captionMax = content = null;
+      this.options.getElements.call(this);
+      this.sizes = _SPL.getSizes(this.container, this.options);
       this.width = this.sizes.max;
       this.options.setSizes.call(this);
       _ref = this.aria;
@@ -196,33 +225,44 @@ It is a plugin that show `radios buttons` like switch slide
         value = _ref[attrib];
         this.widget.setAttribute(attrib, value);
       }
-      tapElement = this.options.getTapElement.call(this);
-      tap = new Hammer.Tap;
-      this.mc = new Hammer.Manager(tapElement, {
-        dragLockToAxis: true,
-        dragBlockHorizontal: true,
-        preventDefault: true
-      });
-      this.mc.add(tap);
-      this.mc.on('tap', _SPL.onTap.bind(this, tapElement));
-      dragElement = this.options.getDragElement.call(this);
-      pan = new Hammer.Pan({
-        direction: Hammer.DIRECTION_HORIZONTAL
-      });
-      this.mk = new Hammer.Manager(dragElement, {
-        dragLockToAxis: true,
-        dragBlockHorizontal: true,
-        preventDefault: true
-      });
-      this.mk.add(pan);
-      this.mk.on('panstart', _SPL.onStart.bind(this, dragElement));
-      this.mk.on('pan', _SPL.onMove.bind(this));
-      this.mk.on('panend', _SPL.onEnd.bind(this, dragElement));
-      this.mk.on('pancancel', _SPL.onEnd.bind(this, dragElement));
-      this.eventCall = {
-        'keydown': _SPL.onKeydown.bind(this)
+      this.tapElement = this.options.getTapElement.call(this);
+      this.dragElement = this.options.getDragElement.call(this);
+      this.events = {
+        tap: _SPL.onTap.bind(this),
+        panstart: _SPL.onStart.bind(this),
+        pan: _SPL.onMove.bind(this),
+        panend: _SPL.onEnd.bind(this),
+        pancancel: _SPL.onEnd.bind(this),
+        keydown: _SPL.onKeydown.bind(this)
       };
-      this.widget.addEventListener('keydown', this.eventCall.keydown);
+      this.hammer = [
+        {
+          manager: new Hammer.Manager(this.tapElement),
+          evento: new Hammer.Tap,
+          methods: ['tap']
+        }, {
+          manager: new Hammer.Manager(this.dragElement, {
+            dragLockToAxis: true,
+            dragBlockHorizontal: true,
+            preventDefault: true
+          }),
+          evento: new Hammer.Pan({
+            direction: Hammer.DIRECTION_HORIZONTAL
+          }),
+          methods: ['panstart', 'pan', 'panend', 'pancancel']
+        }
+      ];
+      _ref1 = this.hammer;
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        o = _ref1[_i];
+        o.manager.add(o.evento);
+        _ref2 = o.methods;
+        for (_j = 0, _len1 = _ref2.length; _j < _len1; _j++) {
+          m = _ref2[_j];
+          o.manager.on(m, this.events[m]);
+        }
+      }
+      this.widget.addEventListener('keydown', this.events.keydown, true);
       _SPL.onToggle.call(this);
     }
   };
@@ -237,88 +277,93 @@ It is a plugin that show `radios buttons` like switch slide
       } else {
         this.container = container;
       }
-      initialized = SwitchSlide.data(this.container);
-      if (initialized instanceof SwitchSlide) {
-        return initialized;
+      if (isElement(this.container === false)) {
+        throw new SwitchSlideException('✖ Container must be an HTMLElement');
       } else {
-        id = ++GUID;
-      }
-      this.container.srGUID = id;
-      instances[id] = this;
-      this.options = {
-        labeledby: null,
-        required: false,
-        template: _SPL.getTemplate,
-        setElements: _SPL.setElements,
-        setSizes: _SPL.setSizes,
-        getTapElement: _SPL.getTapElement,
-        getDragElement: _SPL.getDragElement,
-        negative: false,
-        swap: false,
-        initialize: 'switchSlide--initialized',
-        selectors: {
-          widget: '.widgetSlide',
-          opts: '.widgetSlide__opt',
-          optMin: '.widgetSlide__opt--min',
-          optMax: '.widgetSlide__opt--max',
-          knob: '.widgetSlide__knob'
-        }
-      };
-      extend(this.options, options);
-      this.a = this.options.swap ? 1 : 0;
-      this.b = this.a ^ 1;
-      this.radios = [];
-      radios = this.container.getElementsByTagName('input');
-      for (idx = _i = 0, _len = radios.length; _i < _len; idx = ++_i) {
-        radio = radios[idx];
-        if (radio.type === 'radio') {
-          this.radios.push(radio);
-        }
-      }
-      if (this.radios.length !== 2) {
-        throw new SwitchSlideException('✖ No radios');
-      } else {
-        classie.add(this.container, this.options.initialize);
-        this.width = 0;
-        this.shift = null;
-        if (this.radios[this.a].checked) {
-          this.shift = false;
-        }
-        if (this.radios[this.b].checked) {
-          this.shift = true;
-        }
-        this.valor = null;
-        this.updateValor();
-        this.active = null;
-        this.transform = {
-          translate: {
-            x: 0
+        initialized = SwitchSlide.data(this.container);
+        if (initialized instanceof SwitchSlide) {
+          return initialized;
+        } else {
+          id = ++GUID;
+          this.container.srGUID = id;
+          instances[id] = this;
+          this.options = {
+            labeledby: null,
+            required: false,
+            template: _SPL.getTemplate,
+            setSizes: _SPL.setSizes,
+            getElements: _SPL.getElements,
+            getTapElement: _SPL.getTapElement,
+            getDragElement: _SPL.getDragElement,
+            negative: false,
+            swapOrder: false,
+            initialize: 'switchSlide--initialized',
+            selectors: {
+              widget: '.widgetSlide',
+              opts: '.widgetSlide__opt',
+              optMin: '.widgetSlide__opt--min',
+              optMax: '.widgetSlide__opt--max',
+              knob: '.widgetSlide__knob'
+            }
+          };
+          extend(this.options, options);
+          this.a = this.options.swapOrder ? 1 : 0;
+          this.b = this.a ^ 1;
+          this.radios = [];
+          radios = this.container.getElementsByTagName('input');
+          for (idx = _i = 0, _len = radios.length; _i < _len; idx = ++_i) {
+            radio = radios[idx];
+            if (radio.type === 'radio') {
+              this.radios.push(radio);
+            }
           }
-        };
-        this.keyCodes = {
-          'space': 32,
-          'left': 37,
-          'right': 39
-        };
-        this.aria = {
-          'tabindex': 0,
-          'role': 'slider',
-          'aria-valuemin': this.radios[this.a].title,
-          'aria-valuemax': this.radios[this.b].title,
-          'aria-valuetext': null,
-          'aria-valuenow': null,
-          'aria-labeledby': this.options.labeledby,
-          'aria-required': this.options.required
-        };
-        this.eventToggleParams = [
-          {
-            'instance': this,
-            'radios': this.radios,
-            'value': this.valor
+          if (this.radios.length !== 2) {
+            throw new SwitchSlideException('✖ No radios');
+          } else {
+            classie.add(this.container, this.options.initialize);
+            this.width = 0;
+            this.shift = null;
+            if (this.radios[this.a].checked) {
+              this.shift = false;
+            }
+            if (this.radios[this.b].checked) {
+              this.shift = true;
+            }
+            this.valor = null;
+            this.updateValor();
+            this.active = null;
+            this.transform = {
+              translate: {
+                x: 0
+              }
+            };
+            this.keyCodes = {
+              'space': 32,
+              'left': 37,
+              'right': 39
+            };
+            this.aria = {
+              'tabindex': 0,
+              'role': 'slider',
+              'aria-valuemin': this.radios[this.a].title,
+              'aria-valuemax': this.radios[this.b].title,
+              'aria-valuetext': null,
+              'aria-valuenow': null,
+              'aria-labeledby': this.options.labeledby,
+              'aria-required': this.options.required
+            };
+            this.eventToggleParams = [
+              {
+                'instance': this,
+                'radios': this.radios,
+                'value': this.valor
+              }
+            ];
+            this.eventChange = new CustomEvent('change');
+            this.widget = this.sMin = this.sMax = this.knob = null;
+            _SPL.build.call(this);
           }
-        ];
-        this.eventChange = new CustomEvent('change');
-        _SPL.build.call(this);
+        }
       }
       return;
     }
@@ -343,6 +388,7 @@ It is a plugin that show `radios buttons` like switch slide
         method = this.active ? 'add' : 'remove';
         classie[method](this.knob, 'is-active');
       }
+      method = null;
     };
 
     SwitchSlide.prototype.updateAria = function() {
@@ -352,6 +398,7 @@ It is a plugin that show `radios buttons` like switch slide
         this.widget.setAttribute('aria-valuenow', v);
         this.widget.setAttribute('aria-valuetext', v);
       }
+      v = null;
     };
 
     SwitchSlide.prototype.updateValor = function() {
@@ -365,28 +412,29 @@ It is a plugin that show `radios buttons` like switch slide
     };
 
     SwitchSlide.prototype.updatePosition = function() {
-      var dragElement, value;
+      var value;
       value = ["translate3d(" + this.transform.translate.x + "px, 0, 0)"];
-      dragElement = this.options.getDragElement.call(this);
-      dragElement.style[transformProperty] = value.join(" ");
+      this.dragElement.style[transformProperty] = value.join(" ");
+      value = null;
     };
 
     SwitchSlide.prototype.destroy = function() {
-      var attr;
+      var o, _i, _len, _ref;
       if (this.container !== null) {
-        this.widget.removeEventListener('keydown', this.eventCall.keydown);
-        this.mk.destroy();
-        this.mc.destroy();
-        for (attr in this.aria) {
-          this.widget.removeAttribute(attr);
+        _ref = this.hammer;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          o = _ref[_i];
+          o.manager.destroy();
         }
+        this.widget.removeEventListener('keydown', this.events.keydown);
+        removeRecursive(this.widget);
         if (this.container.contains(this.widget)) {
           this.container.removeChild(this.widget);
         }
         classie.remove(this.container, this.options.initialize);
         this.container.removeAttribute("style");
-        delete this.container.srGUID;
-        this.container = null;
+        this.container.srGUID = null;
+        this.container = this.options = this.a = this.b = this.radios = this.width = this.shift = this.valor = this.active = this.transform = this.keyCodes = this.aria = this.eventToggleParams = this.eventChange = this.widget = this.sMin = this.sMax = this.knob = this.sizes = this.tapElement = this.dragElement = this.events = this.hammer = null;
       }
     };
 
