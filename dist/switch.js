@@ -8,7 +8,7 @@ It is a plugin that show `radios buttons` like switch slide
 @copyright   Author
  */
 (function(root, factory) {
-  if (typeof define === "function" && define.amd) {
+  if (typeof define === 'function' && define.amd) {
     define(['get-style-property/get-style-property', 'classie/classie', 'eventEmitter/EventEmitter', 'hammerjs/hammer'], factory);
   } else {
     root.SwitchSlide = factory(root.getStyleProperty, root.classie, root.EventEmitter, root.Hammer);
@@ -24,10 +24,10 @@ It is a plugin that show `radios buttons` like switch slide
     return a;
   };
   isElement = function(obj) {
-    if (typeof HTMLElement === "object") {
+    if (typeof HTMLElement === 'object') {
       return obj instanceof HTMLElement;
     } else {
-      return obj && typeof obj === "object" && obj.nodeType === 1 && typeof obj.nodeName === "string";
+      return obj && typeof obj === 'object' && obj.nodeType === 1 && typeof obj.nodeName === 'string';
     }
   };
   removeRecursive = function(parent) {
@@ -102,7 +102,7 @@ It is a plugin that show `radios buttons` like switch slide
           _SPL.unchecked(radio);
         }
       }
-      this.isActive();
+      _SPL.isActive.call(this);
       this.updateAria();
       this.updateValor();
       this.updatePosition();
@@ -170,6 +170,14 @@ It is a plugin that show `radios buttons` like switch slide
         _SPL.onToggle.call(this);
       }
       trigger = null;
+    },
+    isActive: function() {
+      var method;
+      if (this.active !== null) {
+        method = this.active ? 'add' : 'remove';
+        classie[method](this.knob, 'is-active');
+      }
+      method = null;
     },
     getElements: function() {
       this.widget = this.container.querySelector(this.options.selectors.widget);
@@ -285,7 +293,7 @@ It is a plugin that show `radios buttons` like switch slide
           return initialized;
         } else {
           id = ++GUID;
-          this.container.srGUID = id;
+          this.container.GUID = id;
           instances[id] = this;
           this.options = {
             labeledby: null,
@@ -382,15 +390,6 @@ It is a plugin that show `radios buttons` like switch slide
       _SPL.onToggle.call(this);
     };
 
-    SwitchSlide.prototype.isActive = function() {
-      var method;
-      if (this.active !== null) {
-        method = this.active ? 'add' : 'remove';
-        classie[method](this.knob, 'is-active');
-      }
-      method = null;
-    };
-
     SwitchSlide.prototype.updateAria = function() {
       var v;
       if (this.shift !== null) {
@@ -432,8 +431,8 @@ It is a plugin that show `radios buttons` like switch slide
           this.container.removeChild(this.widget);
         }
         classie.remove(this.container, this.options.initialize);
-        this.container.removeAttribute("style");
-        this.container.srGUID = null;
+        this.container.removeAttribute('style');
+        this.container.GUID = null;
         this.container = this.options = this.a = this.b = this.radios = this.width = this.shift = this.valor = this.active = this.transform = this.keyCodes = this.aria = this.eventToggleParams = this.eventChange = this.widget = this.sMin = this.sMax = this.knob = this.sizes = this.tapElement = this.dragElement = this.events = this.hammer = null;
       }
     };
@@ -444,7 +443,7 @@ It is a plugin that show `radios buttons` like switch slide
   extend(SwitchSlide.prototype, EventEmitter.prototype);
   SwitchSlide.data = function(el) {
     var id;
-    id = el && el.srGUID;
+    id = el && el.GUID;
     return id && instances[id];
   };
   return SwitchSlide;

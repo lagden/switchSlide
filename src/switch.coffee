@@ -8,7 +8,7 @@ It is a plugin that show `radios buttons` like switch slide
 ###
 
 ((root, factory) ->
-  if typeof define is "function" and define.amd
+  if typeof define is 'function' and define.amd
     define [
         'get-style-property/get-style-property'
         'classie/classie'
@@ -32,19 +32,19 @@ It is a plugin that show `radios buttons` like switch slide
 
   # Verify if object is an HTMLElement
   isElement = (obj) ->
-    if typeof HTMLElement is "object"
+    if typeof HTMLElement is 'object'
       return obj instanceof HTMLElement
     else
       return obj and
-             typeof obj is "object" and
+             typeof obj is 'object' and
              obj.nodeType is 1 and
-             typeof obj.nodeName is "string"
+             typeof obj.nodeName is 'string'
 
   removeRecursive = (parent) ->
     while parent.hasChildNodes()
       el = parent.lastChild
       if el.hasChildNodes()
-        removeRecursive(el)
+        removeRecursive el
       else
         parent.removeChild el
       el = null
@@ -98,7 +98,7 @@ It is a plugin that show `radios buttons` like switch slide
         'max' : Math.max sMin.clientWidth, sMax.clientWidth
 
       # Remove
-      removeRecursive(clone)
+      removeRecursive clone
       document.body.removeChild clone
 
       # GC
@@ -121,19 +121,19 @@ It is a plugin that show `radios buttons` like switch slide
         a = if @shift then @b else @a
         b = a ^ 1
 
-        _SPL.checked(@radios[a])
-        _SPL.unchecked(@radios[b])
+        _SPL.checked @radios[a]
+        _SPL.unchecked @radios[b]
 
       else
         @active = false
         @transform.translate.x = width / 2
-        _SPL.unchecked(radio) for radio in @radios
+        _SPL.unchecked radio for radio in @radios
 
-      @isActive()
+      _SPL.isActive.call @
+
       @updateAria()
       @updateValor()
       @updatePosition()
-
       @emitToggle()
 
       for radio in @radios when radio.checked
@@ -162,6 +162,7 @@ It is a plugin that show `radios buttons` like switch slide
         @transform.translate.x = Math.min width, Math.max v, 0
 
       @updatePosition()
+
       width =
       v     = null
       return
@@ -204,11 +205,20 @@ It is a plugin that show `radios buttons` like switch slide
           trigger = false
 
       _SPL.onToggle.call @ if trigger
+
       trigger = null
       return
 
     # Helpers
     #
+    # Check if widget is active
+    isActive: ->
+      if @active isnt null
+        method = if @active then 'add' else 'remove'
+        classie[method] @knob, 'is-active'
+      method = null
+      return
+
     # Get Elements
     getElements: ->
       @widget = @container.querySelector @options.selectors.widget
@@ -332,9 +342,8 @@ It is a plugin that show `radios buttons` like switch slide
       _SPL.onToggle.call @
       return
 
-  # Class
-  #
   # Vars
+  #
   # @container
   # @options
   # @a
@@ -358,7 +367,8 @@ It is a plugin that show `radios buttons` like switch slide
   # @dragElement
   # @events
   # @hammer
-  #
+
+  # Class
   class SwitchSlide
     constructor: (container, options) ->
 
@@ -376,7 +386,6 @@ It is a plugin that show `radios buttons` like switch slide
       if isElement @container is false
         throw new SwitchSlideException '✖ Container must be an HTMLElement'
       else
-
         # Check if component was initialized
         initialized = SwitchSlide.data @container
 
@@ -385,7 +394,7 @@ It is a plugin that show `radios buttons` like switch slide
         else
           id = ++GUID
 
-          @container.srGUID = id
+          @container.GUID = id
           instances[id] = @
 
           # Options
@@ -500,14 +509,6 @@ It is a plugin that show `radios buttons` like switch slide
       _SPL.onToggle.call @
       return
 
-    # Show or hide element
-    isActive: ->
-      if @active isnt null
-        method = if @active then 'add' else 'remove'
-        classie[method] @knob, 'is-active'
-      method = null
-      return
-
     # Update WAI-ARIA - Accessibility
     updateAria: ->
       if @shift isnt null
@@ -545,7 +546,7 @@ It is a plugin that show `radios buttons` like switch slide
         @widget.removeEventListener 'keydown', @events.keydown
 
         # Remove children from @widget
-        removeRecursive(@widget)
+        removeRecursive @widget
 
         # Remove @widget
         if @container.contains @widget
@@ -553,10 +554,10 @@ It is a plugin that show `radios buttons` like switch slide
 
         # Remove classes and attributes
         classie.remove @container, @options.initialize
-        @container.removeAttribute "style"
+        @container.removeAttribute 'style'
 
         # Remove reference
-        @container.srGUID = null
+        @container.GUID = null
 
         # Nullable
         @container         =
@@ -594,7 +595,7 @@ It is a plugin that show `radios buttons` like switch slide
   # @return {SwitchSlide}
   #
   SwitchSlide.data = (el) ->
-    id = el and el.srGUID
+    id = el and el.GUID
     return id and instances[id]
 
   return SwitchSlide
