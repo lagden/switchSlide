@@ -53,7 +53,7 @@
       
       // Default
       try {
-          sl = SwitchSlide('.switchSlide');
+          sl = SwitchSlide('.switchSlide', {swapOrder: true});
           cacheSwitches.push(sl);
       } catch (e) {
           console.error('sl', e.message, e.name);
@@ -65,7 +65,6 @@
           sr = SwitchSlide(el, {
               required: el.previousElementSibling.id,
               negative: true,
-              swapOrder: true,
               initialize: 'switchCustom--initialized',
               getTapElement: function() {
                   return this.container
