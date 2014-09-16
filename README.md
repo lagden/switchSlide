@@ -87,3 +87,5 @@ try {
 ## Author
 
 [Thiago Lagden](http://lagden.in)
+
+::beers::
