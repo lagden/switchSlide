@@ -33,6 +33,30 @@
         touch-select: none
         touch-callout: none
 
+        &:before
+            content: "\0020"
+            position: absolute
+            top: 0
+            left: 50%
+            width: 1px
+            height: 100%
+            overflow: hidden
+
+            background-color: rgb(99, 99, 99)
+
+            /* autoprefixer: off */
+            background-image: -moz-linear-gradient(top, rgb(1,1,1) 0%,rgb(99, 99, 99) 15%,rgb(99, 99, 99) 85%,rgb(27,27,27) 100%)
+            background-image: -webkit-linear-gradient(top, rgb(1,1,1) 0%,rgb(99, 99, 99) 15%,rgb(99, 99, 99) 85%,rgb(27,27,27) 100%)
+            background-image: -ms-linear-gradient(top, rgb(1,1,1) 0%,rgb(99, 99, 99) 15%,rgb(99, 99, 99) 85%,rgb(27,27,27) 100%)
+            background-image: linear-gradient(top, rgb(1,1,1) 0%,rgb(99, 99, 99) 15%,rgb(99, 99, 99) 85%,rgb(27,27,27) 100%)
+            /* autoprefixer: on */
+
+            transition: opacity 0.2s
+
+        &.is-active
+            &:before
+                opacity: 0
+
         &:focus
             outline: none
             > .widgetSlide__knob

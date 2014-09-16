@@ -25,12 +25,17 @@ It is a plugin that show `radios buttons` like switch slide
 
   'use strict'
 
+  # Body
+  docBody = document.querySelector 'body'
+
   # Extend object
+  # https://github.com/desandro/draggabilly/blob/master/draggabilly.js#L17
   extend = (a, b) ->
     a[prop] = b[prop] for prop of b
     return a
 
   # Verify if object is an HTMLElement
+  # http://stackoverflow.com/a/384380/182183
   isElement = (obj) ->
     if typeof HTMLElement is 'object'
       return obj instanceof HTMLElement
@@ -40,15 +45,15 @@ It is a plugin that show `radios buttons` like switch slide
              obj.nodeType is 1 and
              typeof obj.nodeName is 'string'
 
-  removeRecursive = (parent) ->
-    while parent.hasChildNodes()
-      el = parent.lastChild
-      if el.hasChildNodes()
-        removeRecursive el
+  # Remove all children
+  removeAllChildren = (el) ->
+    while el.hasChildNodes()
+      c = el.lastChild
+      if c.hasChildNodes()
+        el.removeChild removeAllChildren(c)
       else
-        parent.removeChild el
-      el = null
-    return
+        el.removeChild c
+    return el
 
   # Transform property cross-browser
   transformProperty = getStyleProperty 'transform'
@@ -62,285 +67,6 @@ It is a plugin that show `radios buttons` like switch slide
   # Exception
   class SwitchSlideException
     constructor: (@message, @name='SwitchSlideException') ->
-
-  # Private Methods
-  _SPL =
-    # Template
-    getTemplate: ->
-      return '
-        <div class="widgetSlide">
-          <div class="widgetSlide__opt widgetSlide__opt--min">
-            <span>{captionMin}</span>
-          </div>
-          <div class="widgetSlide__knob"></div>
-          <div class="widgetSlide__opt widgetSlide__opt--max">
-            <span>{captionMax}</span>
-          </div>
-        </div>'
-
-    # Size of elements
-    getSizes: (container, options) ->
-      clone = container.cloneNode true
-      clone.style.visibility = 'hidden'
-      clone.style.position   = 'absolute'
-
-      document.body.appendChild clone
-
-      widget = clone.querySelector options.selectors.widget
-      sMin   = widget.querySelector options.selectors.optMin
-      sMax   = widget.querySelector options.selectors.optMax
-      knob   = widget.querySelector options.selectors.knob
-
-      sizes =
-        'sMin': sMin.clientWidth
-        'sMax': sMax.clientWidth
-        'knob': knob.clientWidth
-        'max' : Math.max sMin.clientWidth, sMax.clientWidth
-
-      # Remove
-      removeRecursive clone
-      document.body.removeChild clone
-
-      # GC
-      clone  = null
-      widget = null
-      sMin   = null
-      sMax   = null
-      knob   = null
-      return sizes
-
-    # Event handler
-    #
-    onToggle: ->
-      width = if @options.negative then -@width else @width
-
-      if @shift isnt null
-        @active = true
-        @transform.translate.x = if @shift then width else 0
-
-        a = if @shift then @b else @a
-        b = a ^ 1
-
-        _SPL.checked @radios[a]
-        _SPL.unchecked @radios[b]
-
-      else
-        @active = false
-        @transform.translate.x = width / 2
-        _SPL.unchecked radio for radio in @radios
-
-      _SPL.isActive.call @
-
-      @updateAria()
-      @updateValor()
-      @updatePosition()
-      @emitToggle()
-
-      for radio in @radios when radio.checked
-        radio.dispatchEvent @eventChange
-
-      width =
-      a     =
-      b     = null
-      return
-
-    onStart: (event) ->
-      @dragElement.focus()
-      classie.add @dragElement, 'is-dragging'
-      return
-
-    onMove: (event) ->
-      width = if @options.negative then -@width else @width
-      v = (width / 2) + event.deltaX
-
-      if @shift isnt null
-        v = if @shift then width + event.deltaX else event.deltaX
-
-      if @options.negative
-        @transform.translate.x = Math.min 0, Math.max width, v
-      else
-        @transform.translate.x = Math.min width, Math.max v, 0
-
-      @updatePosition()
-
-      width =
-      v     = null
-      return
-
-    onEnd: (event) ->
-      @shift = Math.abs(@transform.translate.x) > (@width / 2)
-      classie.remove @dragElement, 'is-dragging'
-      _SPL.onToggle.call @
-      return
-
-    onTap: (event) ->
-      rect = @tapElement.getBoundingClientRect()
-      data = [
-        rect.left + (rect.width / 2)
-        event.center.x
-      ]
-      a = if @options.negative then 1 else 0
-      b = a ^ 1
-
-      @shift = data[a] < data[b]
-
-      _SPL.onToggle.call @
-
-      rect =
-      data =
-      a    =
-      b    = null
-      return
-
-    onKeydown: (event) ->
-      trigger = true
-      switch event.keyCode
-        when @keyCodes.space
-          @shift = !@shift
-        when @keyCodes.right
-          @shift = !@options.negative
-        when @keyCodes.left
-          @shift = @options.negative
-        else
-          trigger = false
-
-      _SPL.onToggle.call @ if trigger
-
-      trigger = null
-      return
-
-    # Helpers
-    #
-    # Check if widget is active
-    isActive: ->
-      if @active isnt null
-        method = if @active then 'add' else 'remove'
-        classie[method] @knob, 'is-active'
-      method = null
-      return
-
-    # Get Elements
-    getElements: ->
-      @widget = @container.querySelector @options.selectors.widget
-      @sMin   = @widget.querySelector @options.selectors.optMax
-      @sMax   = @widget.querySelector @options.selectors.optMin
-      @knob   = @widget.querySelector @options.selectors.knob
-      return
-
-    # Set Widths
-    setSizes: ->
-      @sMin.style.width = "#{@width}px"
-      @sMax.style.width = "#{@width}px"
-      @knob.style.width = "#{@width}px"
-      @container.style.width = (@width * 2)  + 'px'
-      return
-
-    # Handler Tap
-    getTapElement: ->
-      return @widget
-
-    # Handler Drag
-    getDragElement: ->
-      return @knob
-
-    # Radio checked
-    checked: (radio) ->
-      radio.setAttribute 'checked', ''
-      radio.checked = true
-      return
-
-    # Radio unchecked
-    unchecked: (radio) ->
-      radio.removeAttribute 'checked'
-      radio.checked = false
-      return
-
-    # Build
-    build: ->
-      # Caption
-      captionMin = captionMax = ''
-
-      labels = @container.getElementsByTagName 'label'
-      if labels.length == 2
-        captionMin  = labels[@a].textContent
-        captionMax  = labels[@b].textContent
-      else
-        console.warn '✖ No labels'
-
-      # Template Render
-      r =
-        'captionMin' : captionMin
-        'captionMax' : captionMax
-
-      content = @options.template().replace /\{(.*?)\}/g, (a, b) ->
-        return r[b]
-
-      @container.insertAdjacentHTML 'afterbegin', content
-
-      labels     =
-      captionMin =
-      captionMax =
-      content    = null
-
-      # Elements
-      @options.getElements.call @
-
-      # Size
-      @sizes = _SPL.getSizes @container, @options
-      @width = @sizes.max
-      @options.setSizes.call @
-
-      # WAI-ARIA
-      @widget.setAttribute attrib, value for attrib, value of @aria
-
-      # Handlers
-      @tapElement  = @options.getTapElement.call @
-      @dragElement = @options.getDragElement.call @
-
-      # Events
-      @events =
-        tap       : _SPL.onTap.bind @
-        panstart  : _SPL.onStart.bind @
-        pan       : _SPL.onMove.bind @
-        panend    : _SPL.onEnd.bind @
-        pancancel : _SPL.onEnd.bind @
-        keydown   : _SPL.onKeydown.bind @
-
-      # Hammer Manager
-      @hammer = [
-        {
-          manager : new Hammer.Manager @tapElement
-          evento  : new Hammer.Tap
-          methods : [
-            'tap'
-          ]
-        }
-        {
-          manager : new Hammer.Manager @dragElement,
-                                       dragLockToAxis: true
-                                       dragBlockHorizontal: true
-                                       preventDefault: true
-          evento  : new Hammer.Pan direction: Hammer.DIRECTION_HORIZONTAL
-          methods : [
-            'panstart'
-            'pan'
-            'panend'
-            'pancancel'
-          ]
-        }
-      ]
-
-      # Add Event and Handler
-      for o in @hammer
-        o.manager.add o.evento
-        for m in o.methods
-          o.manager.on m, @events[m]
-
-      @widget.addEventListener 'keydown', @events.keydown, true
-
-      # Init
-      _SPL.onToggle.call @
-      return
 
   # Vars
   #
@@ -370,6 +96,286 @@ It is a plugin that show `radios buttons` like switch slide
 
   # Class
   class SwitchSlide
+
+    # Private Methods
+    _SPL =
+      # Template
+      getTemplate: ->
+        return '
+          <div class="widgetSlide">
+            <div class="widgetSlide__opt widgetSlide__opt--min">
+              <span>{captionMin}</span>
+            </div>
+            <div class="widgetSlide__knob"></div>
+            <div class="widgetSlide__opt widgetSlide__opt--max">
+              <span>{captionMax}</span>
+            </div>
+          </div>'
+
+      # Size of elements
+      getSizes: (container, options) ->
+        clone = container.cloneNode true
+        clone.style.visibility = 'hidden'
+        clone.style.position   = 'absolute'
+
+        docBody.appendChild clone
+
+        widget = clone.querySelector options.selectors.widget
+        sMin   = widget.querySelector options.selectors.optMin
+        sMax   = widget.querySelector options.selectors.optMax
+        knob   = widget.querySelector options.selectors.knob
+
+        sizes =
+          'sMin': sMin.clientWidth
+          'sMax': sMax.clientWidth
+          'knob': knob.clientWidth
+          'max' : Math.max sMin.clientWidth, sMax.clientWidth
+
+        # Remove
+        docBody.removeChild removeAllChildren(clone)
+
+        # GC
+        clone  = null
+        widget = null
+        sMin   = null
+        sMax   = null
+        knob   = null
+        return sizes
+
+      # Event handler
+      #
+      onToggle: ->
+        width = if @options.negative then -@width else @width
+
+        if @shift isnt null
+          @active = true
+          @transform.translate.x = if @shift then width else 0
+
+          a = if @shift then @b else @a
+          b = a ^ 1
+
+          _SPL.checked @radios[a]
+          _SPL.unchecked @radios[b]
+
+        else
+          @active = false
+          @transform.translate.x = width / 2
+          _SPL.unchecked radio for radio in @radios
+
+        _SPL.isActive.call @
+
+        @updateAria()
+        @updateValor()
+        @updatePosition()
+        @emitToggle()
+
+        for radio in @radios when radio.checked
+          radio.dispatchEvent @eventChange
+
+        width =
+        a     =
+        b     = null
+        return
+
+      onStart: (event) ->
+        @dragElement.focus()
+        classie.add @dragElement, 'is-dragging'
+        return
+
+      onMove: (event) ->
+        width = if @options.negative then -@width else @width
+        v = (width / 2) + event.deltaX
+
+        if @shift isnt null
+          v = if @shift then width + event.deltaX else event.deltaX
+
+        if @options.negative
+          @transform.translate.x = Math.min 0, Math.max width, v
+        else
+          @transform.translate.x = Math.min width, Math.max v, 0
+
+        @updatePosition()
+
+        width =
+        v     = null
+        return
+
+      onEnd: (event) ->
+        @shift = Math.abs(@transform.translate.x) > (@width / 2)
+        classie.remove @dragElement, 'is-dragging'
+        _SPL.onToggle.call @
+        return
+
+      onTap: (event) ->
+        rect = @tapElement.getBoundingClientRect()
+        data = [
+          rect.left + (rect.width / 2)
+          event.center.x
+        ]
+        a = if @options.negative then 1 else 0
+        b = a ^ 1
+
+        @shift = data[a] < data[b]
+
+        _SPL.onToggle.call @
+
+        rect =
+        data =
+        a    =
+        b    = null
+        return
+
+      onKeydown: (event) ->
+        trigger = true
+        switch event.keyCode
+          when @keyCodes.space
+            @shift = !@shift
+          when @keyCodes.right
+            @shift = !@options.negative
+          when @keyCodes.left
+            @shift = @options.negative
+          else
+            trigger = false
+
+        _SPL.onToggle.call @ if trigger
+
+        trigger = null
+        return
+
+      # Helpers
+      #
+      # Check if widget is active
+      isActive: ->
+        if @active isnt null
+          method = if @active then 'add' else 'remove'
+          classie[method] @knob, 'is-active'
+          classie[method] @widget, 'is-active'
+        method = null
+        return
+
+      # Get Elements
+      getElements: ->
+        @widget = @container.querySelector @options.selectors.widget
+        @sMin   = @widget.querySelector @options.selectors.optMax
+        @sMax   = @widget.querySelector @options.selectors.optMin
+        @knob   = @widget.querySelector @options.selectors.knob
+        return
+
+      # Set Widths
+      setSizes: ->
+        @sMin.style.width = "#{@width}px"
+        @sMax.style.width = "#{@width}px"
+        @knob.style.width = "#{@width}px"
+        @container.style.width = (@width * 2)  + 'px'
+        return
+
+      # Handler Tap
+      getTapElement: ->
+        return @widget
+
+      # Handler Drag
+      getDragElement: ->
+        return @knob
+
+      # Radio checked
+      checked: (radio) ->
+        radio.setAttribute 'checked', ''
+        radio.checked = true
+        return
+
+      # Radio unchecked
+      unchecked: (radio) ->
+        radio.removeAttribute 'checked'
+        radio.checked = false
+        return
+
+      # Build
+      build: ->
+        # Caption
+        captionMin = captionMax = ''
+
+        labels = @container.getElementsByTagName 'label'
+        if labels.length == 2
+          captionMin  = labels[@a].textContent
+          captionMax  = labels[@b].textContent
+        else
+          console.warn '✖ No labels'
+
+        # Template Render
+        r =
+          'captionMin' : captionMin
+          'captionMax' : captionMax
+
+        content = @options.template().replace /\{(.*?)\}/g, (a, b) ->
+          return r[b]
+
+        @container.insertAdjacentHTML 'afterbegin', content
+
+        labels     =
+        captionMin =
+        captionMax =
+        content    = null
+
+        # Elements
+        @options.getElements.call @
+
+        # Size
+        @sizes = _SPL.getSizes @container, @options
+        @width = @sizes.max
+        @options.setSizes.call @
+
+        # WAI-ARIA
+        @widget.setAttribute attrib, value for attrib, value of @aria
+
+        # Handlers
+        @tapElement  = @options.getTapElement.call @
+        @dragElement = @options.getDragElement.call @
+
+        # Events
+        @events =
+          tap       : _SPL.onTap.bind @
+          panstart  : _SPL.onStart.bind @
+          pan       : _SPL.onMove.bind @
+          panend    : _SPL.onEnd.bind @
+          pancancel : _SPL.onEnd.bind @
+          keydown   : _SPL.onKeydown.bind @
+
+        # Hammer Manager
+        @hammer = [
+          {
+            manager : new Hammer.Manager @tapElement
+            evento  : new Hammer.Tap
+            methods : [
+              'tap'
+            ]
+          }
+          {
+            manager : new Hammer.Manager @dragElement,
+                                         dragLockToAxis: true
+                                         dragBlockHorizontal: true
+                                         preventDefault: true
+            evento  : new Hammer.Pan direction: Hammer.DIRECTION_HORIZONTAL
+            methods : [
+              'panstart'
+              'pan'
+              'panend'
+              'pancancel'
+            ]
+          }
+        ]
+
+        # Add Event and Handler
+        for o in @hammer
+          o.manager.add o.evento
+          for m in o.methods
+            o.manager.on m, @events[m]
+
+        @widget.addEventListener 'keydown', @events.keydown, true
+
+        # Init
+        _SPL.onToggle.call @
+        return
+
     constructor: (container, options) ->
 
       # Self instance
@@ -546,7 +552,7 @@ It is a plugin that show `radios buttons` like switch slide
         @widget.removeEventListener 'keydown', @events.keydown
 
         # Remove children from @widget
-        removeRecursive @widget
+        removeAllChildren @widget
 
         # Remove @widget
         if @container.contains @widget

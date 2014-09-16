@@ -2946,7 +2946,8 @@ It is a plugin that show `radios buttons` like switch slide
   }
 })(this, function(getStyleProperty, classie, EventEmitter, Hammer) {
   'use strict';
-  var GUID, SwitchSlide, SwitchSlideException, extend, instances, isElement, removeRecursive, transformProperty, _SPL;
+  var GUID, SwitchSlide, SwitchSlideException, docBody, extend, instances, isElement, removeAllChildren, transformProperty;
+  docBody = document.querySelector('body');
   extend = function(a, b) {
     var prop;
     for (prop in b) {
@@ -2961,17 +2962,17 @@ It is a plugin that show `radios buttons` like switch slide
       return obj && typeof obj === 'object' && obj.nodeType === 1 && typeof obj.nodeName === 'string';
     }
   };
-  removeRecursive = function(parent) {
-    var el;
-    while (parent.hasChildNodes()) {
-      el = parent.lastChild;
-      if (el.hasChildNodes()) {
-        removeRecursive(el);
+  removeAllChildren = function(el) {
+    var c;
+    while (el.hasChildNodes()) {
+      c = el.lastChild;
+      if (c.hasChildNodes()) {
+        el.removeChild(removeAllChildren(c));
       } else {
-        parent.removeChild(el);
+        el.removeChild(c);
       }
-      el = null;
     }
+    return el;
   };
   transformProperty = getStyleProperty('transform');
   GUID = 0;
@@ -2985,227 +2986,230 @@ It is a plugin that show `radios buttons` like switch slide
     return SwitchSlideException;
 
   })();
-  _SPL = {
-    getTemplate: function() {
-      return '<div class="widgetSlide"> <div class="widgetSlide__opt widgetSlide__opt--min"> <span>{captionMin}</span> </div> <div class="widgetSlide__knob"></div> <div class="widgetSlide__opt widgetSlide__opt--max"> <span>{captionMax}</span> </div> </div>';
-    },
-    getSizes: function(container, options) {
-      var clone, knob, sMax, sMin, sizes, widget;
-      clone = container.cloneNode(true);
-      clone.style.visibility = 'hidden';
-      clone.style.position = 'absolute';
-      document.body.appendChild(clone);
-      widget = clone.querySelector(options.selectors.widget);
-      sMin = widget.querySelector(options.selectors.optMin);
-      sMax = widget.querySelector(options.selectors.optMax);
-      knob = widget.querySelector(options.selectors.knob);
-      sizes = {
-        'sMin': sMin.clientWidth,
-        'sMax': sMax.clientWidth,
-        'knob': knob.clientWidth,
-        'max': Math.max(sMin.clientWidth, sMax.clientWidth)
-      };
-      removeRecursive(clone);
-      document.body.removeChild(clone);
-      clone = null;
-      widget = null;
-      sMin = null;
-      sMax = null;
-      knob = null;
-      return sizes;
-    },
-    onToggle: function() {
-      var a, b, radio, width, _i, _j, _len, _len1, _ref, _ref1;
-      width = this.options.negative ? -this.width : this.width;
-      if (this.shift !== null) {
-        this.active = true;
-        this.transform.translate.x = this.shift ? width : 0;
-        a = this.shift ? this.b : this.a;
+  SwitchSlide = (function() {
+    var _SPL;
+
+    _SPL = {
+      getTemplate: function() {
+        return '<div class="widgetSlide"> <div class="widgetSlide__opt widgetSlide__opt--min"> <span>{captionMin}</span> </div> <div class="widgetSlide__knob"></div> <div class="widgetSlide__opt widgetSlide__opt--max"> <span>{captionMax}</span> </div> </div>';
+      },
+      getSizes: function(container, options) {
+        var clone, knob, sMax, sMin, sizes, widget;
+        clone = container.cloneNode(true);
+        clone.style.visibility = 'hidden';
+        clone.style.position = 'absolute';
+        docBody.appendChild(clone);
+        widget = clone.querySelector(options.selectors.widget);
+        sMin = widget.querySelector(options.selectors.optMin);
+        sMax = widget.querySelector(options.selectors.optMax);
+        knob = widget.querySelector(options.selectors.knob);
+        sizes = {
+          'sMin': sMin.clientWidth,
+          'sMax': sMax.clientWidth,
+          'knob': knob.clientWidth,
+          'max': Math.max(sMin.clientWidth, sMax.clientWidth)
+        };
+        docBody.removeChild(removeAllChildren(clone));
+        clone = null;
+        widget = null;
+        sMin = null;
+        sMax = null;
+        knob = null;
+        return sizes;
+      },
+      onToggle: function() {
+        var a, b, radio, width, _i, _j, _len, _len1, _ref, _ref1;
+        width = this.options.negative ? -this.width : this.width;
+        if (this.shift !== null) {
+          this.active = true;
+          this.transform.translate.x = this.shift ? width : 0;
+          a = this.shift ? this.b : this.a;
+          b = a ^ 1;
+          _SPL.checked(this.radios[a]);
+          _SPL.unchecked(this.radios[b]);
+        } else {
+          this.active = false;
+          this.transform.translate.x = width / 2;
+          _ref = this.radios;
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            radio = _ref[_i];
+            _SPL.unchecked(radio);
+          }
+        }
+        _SPL.isActive.call(this);
+        this.updateAria();
+        this.updateValor();
+        this.updatePosition();
+        this.emitToggle();
+        _ref1 = this.radios;
+        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+          radio = _ref1[_j];
+          if (radio.checked) {
+            radio.dispatchEvent(this.eventChange);
+          }
+        }
+        width = a = b = null;
+      },
+      onStart: function(event) {
+        this.dragElement.focus();
+        classie.add(this.dragElement, 'is-dragging');
+      },
+      onMove: function(event) {
+        var v, width;
+        width = this.options.negative ? -this.width : this.width;
+        v = (width / 2) + event.deltaX;
+        if (this.shift !== null) {
+          v = this.shift ? width + event.deltaX : event.deltaX;
+        }
+        if (this.options.negative) {
+          this.transform.translate.x = Math.min(0, Math.max(width, v));
+        } else {
+          this.transform.translate.x = Math.min(width, Math.max(v, 0));
+        }
+        this.updatePosition();
+        width = v = null;
+      },
+      onEnd: function(event) {
+        this.shift = Math.abs(this.transform.translate.x) > (this.width / 2);
+        classie.remove(this.dragElement, 'is-dragging');
+        _SPL.onToggle.call(this);
+      },
+      onTap: function(event) {
+        var a, b, data, rect;
+        rect = this.tapElement.getBoundingClientRect();
+        data = [rect.left + (rect.width / 2), event.center.x];
+        a = this.options.negative ? 1 : 0;
         b = a ^ 1;
-        _SPL.checked(this.radios[a]);
-        _SPL.unchecked(this.radios[b]);
-      } else {
-        this.active = false;
-        this.transform.translate.x = width / 2;
-        _ref = this.radios;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          radio = _ref[_i];
-          _SPL.unchecked(radio);
+        this.shift = data[a] < data[b];
+        _SPL.onToggle.call(this);
+        rect = data = a = b = null;
+      },
+      onKeydown: function(event) {
+        var trigger;
+        trigger = true;
+        switch (event.keyCode) {
+          case this.keyCodes.space:
+            this.shift = !this.shift;
+            break;
+          case this.keyCodes.right:
+            this.shift = !this.options.negative;
+            break;
+          case this.keyCodes.left:
+            this.shift = this.options.negative;
+            break;
+          default:
+            trigger = false;
         }
-      }
-      _SPL.isActive.call(this);
-      this.updateAria();
-      this.updateValor();
-      this.updatePosition();
-      this.emitToggle();
-      _ref1 = this.radios;
-      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-        radio = _ref1[_j];
-        if (radio.checked) {
-          radio.dispatchEvent(this.eventChange);
+        if (trigger) {
+          _SPL.onToggle.call(this);
         }
-      }
-      width = a = b = null;
-    },
-    onStart: function(event) {
-      this.dragElement.focus();
-      classie.add(this.dragElement, 'is-dragging');
-    },
-    onMove: function(event) {
-      var v, width;
-      width = this.options.negative ? -this.width : this.width;
-      v = (width / 2) + event.deltaX;
-      if (this.shift !== null) {
-        v = this.shift ? width + event.deltaX : event.deltaX;
-      }
-      if (this.options.negative) {
-        this.transform.translate.x = Math.min(0, Math.max(width, v));
-      } else {
-        this.transform.translate.x = Math.min(width, Math.max(v, 0));
-      }
-      this.updatePosition();
-      width = v = null;
-    },
-    onEnd: function(event) {
-      this.shift = Math.abs(this.transform.translate.x) > (this.width / 2);
-      classie.remove(this.dragElement, 'is-dragging');
-      _SPL.onToggle.call(this);
-    },
-    onTap: function(event) {
-      var a, b, data, rect;
-      rect = this.tapElement.getBoundingClientRect();
-      data = [rect.left + (rect.width / 2), event.center.x];
-      a = this.options.negative ? 1 : 0;
-      b = a ^ 1;
-      this.shift = data[a] < data[b];
-      _SPL.onToggle.call(this);
-      rect = data = a = b = null;
-    },
-    onKeydown: function(event) {
-      var trigger;
-      trigger = true;
-      switch (event.keyCode) {
-        case this.keyCodes.space:
-          this.shift = !this.shift;
-          break;
-        case this.keyCodes.right:
-          this.shift = !this.options.negative;
-          break;
-        case this.keyCodes.left:
-          this.shift = this.options.negative;
-          break;
-        default:
-          trigger = false;
-      }
-      if (trigger) {
+        trigger = null;
+      },
+      isActive: function() {
+        var method;
+        if (this.active !== null) {
+          method = this.active ? 'add' : 'remove';
+          classie[method](this.knob, 'is-active');
+          classie[method](this.widget, 'is-active');
+        }
+        method = null;
+      },
+      getElements: function() {
+        this.widget = this.container.querySelector(this.options.selectors.widget);
+        this.sMin = this.widget.querySelector(this.options.selectors.optMax);
+        this.sMax = this.widget.querySelector(this.options.selectors.optMin);
+        this.knob = this.widget.querySelector(this.options.selectors.knob);
+      },
+      setSizes: function() {
+        this.sMin.style.width = "" + this.width + "px";
+        this.sMax.style.width = "" + this.width + "px";
+        this.knob.style.width = "" + this.width + "px";
+        this.container.style.width = (this.width * 2) + 'px';
+      },
+      getTapElement: function() {
+        return this.widget;
+      },
+      getDragElement: function() {
+        return this.knob;
+      },
+      checked: function(radio) {
+        radio.setAttribute('checked', '');
+        radio.checked = true;
+      },
+      unchecked: function(radio) {
+        radio.removeAttribute('checked');
+        radio.checked = false;
+      },
+      build: function() {
+        var attrib, captionMax, captionMin, content, labels, m, o, r, value, _i, _j, _len, _len1, _ref, _ref1, _ref2;
+        captionMin = captionMax = '';
+        labels = this.container.getElementsByTagName('label');
+        if (labels.length === 2) {
+          captionMin = labels[this.a].textContent;
+          captionMax = labels[this.b].textContent;
+        } else {
+          console.warn('✖ No labels');
+        }
+        r = {
+          'captionMin': captionMin,
+          'captionMax': captionMax
+        };
+        content = this.options.template().replace(/\{(.*?)\}/g, function(a, b) {
+          return r[b];
+        });
+        this.container.insertAdjacentHTML('afterbegin', content);
+        labels = captionMin = captionMax = content = null;
+        this.options.getElements.call(this);
+        this.sizes = _SPL.getSizes(this.container, this.options);
+        this.width = this.sizes.max;
+        this.options.setSizes.call(this);
+        _ref = this.aria;
+        for (attrib in _ref) {
+          value = _ref[attrib];
+          this.widget.setAttribute(attrib, value);
+        }
+        this.tapElement = this.options.getTapElement.call(this);
+        this.dragElement = this.options.getDragElement.call(this);
+        this.events = {
+          tap: _SPL.onTap.bind(this),
+          panstart: _SPL.onStart.bind(this),
+          pan: _SPL.onMove.bind(this),
+          panend: _SPL.onEnd.bind(this),
+          pancancel: _SPL.onEnd.bind(this),
+          keydown: _SPL.onKeydown.bind(this)
+        };
+        this.hammer = [
+          {
+            manager: new Hammer.Manager(this.tapElement),
+            evento: new Hammer.Tap,
+            methods: ['tap']
+          }, {
+            manager: new Hammer.Manager(this.dragElement, {
+              dragLockToAxis: true,
+              dragBlockHorizontal: true,
+              preventDefault: true
+            }),
+            evento: new Hammer.Pan({
+              direction: Hammer.DIRECTION_HORIZONTAL
+            }),
+            methods: ['panstart', 'pan', 'panend', 'pancancel']
+          }
+        ];
+        _ref1 = this.hammer;
+        for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+          o = _ref1[_i];
+          o.manager.add(o.evento);
+          _ref2 = o.methods;
+          for (_j = 0, _len1 = _ref2.length; _j < _len1; _j++) {
+            m = _ref2[_j];
+            o.manager.on(m, this.events[m]);
+          }
+        }
+        this.widget.addEventListener('keydown', this.events.keydown, true);
         _SPL.onToggle.call(this);
       }
-      trigger = null;
-    },
-    isActive: function() {
-      var method;
-      if (this.active !== null) {
-        method = this.active ? 'add' : 'remove';
-        classie[method](this.knob, 'is-active');
-      }
-      method = null;
-    },
-    getElements: function() {
-      this.widget = this.container.querySelector(this.options.selectors.widget);
-      this.sMin = this.widget.querySelector(this.options.selectors.optMax);
-      this.sMax = this.widget.querySelector(this.options.selectors.optMin);
-      this.knob = this.widget.querySelector(this.options.selectors.knob);
-    },
-    setSizes: function() {
-      this.sMin.style.width = "" + this.width + "px";
-      this.sMax.style.width = "" + this.width + "px";
-      this.knob.style.width = "" + this.width + "px";
-      this.container.style.width = (this.width * 2) + 'px';
-    },
-    getTapElement: function() {
-      return this.widget;
-    },
-    getDragElement: function() {
-      return this.knob;
-    },
-    checked: function(radio) {
-      radio.setAttribute('checked', '');
-      radio.checked = true;
-    },
-    unchecked: function(radio) {
-      radio.removeAttribute('checked');
-      radio.checked = false;
-    },
-    build: function() {
-      var attrib, captionMax, captionMin, content, labels, m, o, r, value, _i, _j, _len, _len1, _ref, _ref1, _ref2;
-      captionMin = captionMax = '';
-      labels = this.container.getElementsByTagName('label');
-      if (labels.length === 2) {
-        captionMin = labels[this.a].textContent;
-        captionMax = labels[this.b].textContent;
-      } else {
-        console.warn('✖ No labels');
-      }
-      r = {
-        'captionMin': captionMin,
-        'captionMax': captionMax
-      };
-      content = this.options.template().replace(/\{(.*?)\}/g, function(a, b) {
-        return r[b];
-      });
-      this.container.insertAdjacentHTML('afterbegin', content);
-      labels = captionMin = captionMax = content = null;
-      this.options.getElements.call(this);
-      this.sizes = _SPL.getSizes(this.container, this.options);
-      this.width = this.sizes.max;
-      this.options.setSizes.call(this);
-      _ref = this.aria;
-      for (attrib in _ref) {
-        value = _ref[attrib];
-        this.widget.setAttribute(attrib, value);
-      }
-      this.tapElement = this.options.getTapElement.call(this);
-      this.dragElement = this.options.getDragElement.call(this);
-      this.events = {
-        tap: _SPL.onTap.bind(this),
-        panstart: _SPL.onStart.bind(this),
-        pan: _SPL.onMove.bind(this),
-        panend: _SPL.onEnd.bind(this),
-        pancancel: _SPL.onEnd.bind(this),
-        keydown: _SPL.onKeydown.bind(this)
-      };
-      this.hammer = [
-        {
-          manager: new Hammer.Manager(this.tapElement),
-          evento: new Hammer.Tap,
-          methods: ['tap']
-        }, {
-          manager: new Hammer.Manager(this.dragElement, {
-            dragLockToAxis: true,
-            dragBlockHorizontal: true,
-            preventDefault: true
-          }),
-          evento: new Hammer.Pan({
-            direction: Hammer.DIRECTION_HORIZONTAL
-          }),
-          methods: ['panstart', 'pan', 'panend', 'pancancel']
-        }
-      ];
-      _ref1 = this.hammer;
-      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-        o = _ref1[_i];
-        o.manager.add(o.evento);
-        _ref2 = o.methods;
-        for (_j = 0, _len1 = _ref2.length; _j < _len1; _j++) {
-          m = _ref2[_j];
-          o.manager.on(m, this.events[m]);
-        }
-      }
-      this.widget.addEventListener('keydown', this.events.keydown, true);
-      _SPL.onToggle.call(this);
-    }
-  };
-  SwitchSlide = (function() {
+    };
+
     function SwitchSlide(container, options) {
       var id, idx, initialized, radio, radios, _i, _len;
       if (false === (this instanceof SwitchSlide)) {
@@ -3357,7 +3361,7 @@ It is a plugin that show `radios buttons` like switch slide
           o.manager.destroy();
         }
         this.widget.removeEventListener('keydown', this.events.keydown);
-        removeRecursive(this.widget);
+        removeAllChildren(this.widget);
         if (this.container.contains(this.widget)) {
           this.container.removeChild(this.widget);
         }
