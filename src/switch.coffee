@@ -173,6 +173,7 @@ It is a plugin that show `radios buttons` like switch slide
 
         for radio in @radios when radio.checked
           radio.dispatchEvent @eventChange
+          radio.dispatchEvent @eventClick
 
         width =
         a     =
@@ -281,7 +282,6 @@ It is a plugin that show `radios buttons` like switch slide
 
       # Radio checked
       checked: (radio) ->
-        radio.dispatchEvent new CustomEvent('click', {bubbles: true})
         radio.setAttribute 'checked', ''
         radio.checked = true
         return
@@ -514,8 +514,9 @@ It is a plugin that show `radios buttons` like switch slide
               'value'    : @valor
             ]
 
-            # Event change
-            @eventChange = new CustomEvent 'change'
+            # Events
+            @eventChange = new CustomEvent 'change', bubbles: true
+            @eventClick  = new CustomEvent 'click', bubbles: true
 
             # Others
             @widget =

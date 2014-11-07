@@ -115,9 +115,11 @@ It is a plugin that show `radios buttons` like switch slide
         _ref1 = this.radios;
         for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
           radio = _ref1[_j];
-          if (radio.checked) {
-            radio.dispatchEvent(this.eventChange);
+          if (!radio.checked) {
+            continue;
           }
+          radio.dispatchEvent(this.eventChange);
+          radio.dispatchEvent(this.eventClick);
         }
         width = a = b = null;
       },
@@ -206,9 +208,6 @@ It is a plugin that show `radios buttons` like switch slide
         return this.knob;
       },
       checked: function(radio) {
-        radio.dispatchEvent(new CustomEvent('click', {
-          bubbles: true
-        }));
         radio.setAttribute('checked', '');
         radio.checked = true;
       },
@@ -403,7 +402,12 @@ It is a plugin that show `radios buttons` like switch slide
                 'value': this.valor
               }
             ];
-            this.eventChange = new CustomEvent('change');
+            this.eventChange = new CustomEvent('change', {
+              bubbles: true
+            });
+            this.eventClick = new CustomEvent('click', {
+              bubbles: true
+            });
             this.widget = this.sMin = this.sMax = this.knob = null;
             _SPL.build.call(this);
           }
