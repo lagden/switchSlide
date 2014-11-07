@@ -48,6 +48,11 @@
     </form>
     <script src="switch.pkg.js"></script>
     <script>
+      var simm = document.querySelector('#sim');
+      simm.addEventListener('click', function(ev){
+        console.log('click via ss');
+      }, false);
+      
       var cacheSwitches = [];
       var sr, sl;
       

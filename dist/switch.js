@@ -7,11 +7,11 @@ It is a plugin that show `radios buttons` like switch slide
 @author      Thiago Lagden <lagden [at] gmail.com>
 @copyright   Author
  */
-var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
-
 (function(root, factory) {
   if (typeof define === 'function' && define.amd) {
-    define(['get-style-property/get-style-property', 'classie/classie', 'eventEmitter/EventEmitter', 'hammerjs/hammer'], factory);
+    define(['get-style-property/get-style-property', 'classie/classie', 'eventEmitter/EventEmitter', 'hammerjs/hammer'], function(getStyleProperty, classie, EventEmitter, Hammer) {
+      return factory(getStyleProperty, classie, EventEmitter, Hammer, root);
+    });
   } else {
     root.SwitchSlide = factory(root.getStyleProperty, root.classie, root.EventEmitter, root.Hammer, root);
   }
@@ -182,8 +182,10 @@ var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; 
           method = this.active ? 'add' : 'remove';
           classie[method](this.knob, 'is-active');
           classie[method](this.widget, 'is-active');
+          if (this.active) {
+            classie.remove(this.widget, this.options.errorClass);
+          }
         }
-        method = null;
       },
       getElements: function() {
         this.widget = this.container.querySelector(this.options.widget);
@@ -204,6 +206,9 @@ var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; 
         return this.knob;
       },
       checked: function(radio) {
+        radio.dispatchEvent(new CustomEvent('click', {
+          bubbles: true
+        }));
         radio.setAttribute('checked', '');
         radio.checked = true;
       },
@@ -215,11 +220,10 @@ var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; 
         var has, method;
         has = classie.has(radio, this.options.errorClass);
         method = has ? 'add' : 'remove';
-        console.log(radio, this.options.errorClass, method);
         classie[method](this.widget, this.options.errorClass);
       },
       build: function() {
-        var attrib, captionMax, captionMin, configObserver, content, labels, m, o, observer, r, that, value, _i, _j, _len, _len1, _ref, _ref1, _ref2;
+        var attrib, captionMax, captionMin, configObserver, content, hasMutation, labels, m, o, observer, r, radio, that, value, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _ref3;
         captionMin = captionMax = '';
         labels = this.container.getElementsByTagName('label');
         if (labels.length === 2) {
@@ -284,7 +288,8 @@ var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; 
           }
         }
         this.widget.addEventListener('keydown', this.events.keydown, true);
-        if (__indexOf.call(root, 'MutationObserver') >= 0) {
+        hasMutation = 'MutationObserver' in root;
+        if (hasMutation) {
           that = this;
           observer = new MutationObserver(function(mutations) {
             mutations.forEach(function(mutation) {
@@ -297,7 +302,11 @@ var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; 
             attributes: true,
             attributeOldValue: true
           };
-          observer.observe(this.radios[0], configObserver);
+          _ref3 = this.radios;
+          for (_k = 0, _len2 = _ref3.length; _k < _len2; _k++) {
+            radio = _ref3[_k];
+            observer.observe(radio, configObserver);
+          }
         }
         _SPL.onToggle.call(this);
       }

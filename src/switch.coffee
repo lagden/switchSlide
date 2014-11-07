@@ -10,11 +10,12 @@ It is a plugin that show `radios buttons` like switch slide
 ((root, factory) ->
   if typeof define is 'function' and define.amd
     define [
-        'get-style-property/get-style-property'
-        'classie/classie'
-        'eventEmitter/EventEmitter'
-        'hammerjs/hammer'
-      ], factory
+      'get-style-property/get-style-property'
+      'classie/classie'
+      'eventEmitter/EventEmitter'
+      'hammerjs/hammer'
+    ], (getStyleProperty, classie, EventEmitter, Hammer) ->
+      return factory(getStyleProperty, classie, EventEmitter, Hammer, root)
   else
     root.SwitchSlide = factory root.getStyleProperty,
                                root.classie,
@@ -251,7 +252,7 @@ It is a plugin that show `radios buttons` like switch slide
           method = if @active then 'add' else 'remove'
           classie[method] @knob, 'is-active'
           classie[method] @widget, 'is-active'
-        method = null
+          classie.remove @widget, @options.errorClass if @active
         return
 
       # Get Elements
@@ -280,6 +281,7 @@ It is a plugin that show `radios buttons` like switch slide
 
       # Radio checked
       checked: (radio) ->
+        radio.dispatchEvent new CustomEvent('click', {bubbles: true})
         radio.setAttribute 'checked', ''
         radio.checked = true
         return
@@ -294,7 +296,6 @@ It is a plugin that show `radios buttons` like switch slide
       observer: (radio) ->
         has = classie.has radio, @options.errorClass
         method = if has then 'add' else 'remove'
-        console.log radio, @options.errorClass, method
         classie[method] @widget, @options.errorClass
         return
 
@@ -382,7 +383,8 @@ It is a plugin that show `radios buttons` like switch slide
         @widget.addEventListener 'keydown', @events.keydown, true
 
         # Observer
-        if 'MutationObserver' in root
+        hasMutation = `'MutationObserver' in root`
+        if hasMutation
           that = @
           observer = new MutationObserver (mutations) ->
             mutations.forEach (mutation) ->
@@ -395,7 +397,8 @@ It is a plugin that show `radios buttons` like switch slide
             attributes: true
             attributeOldValue: true
 
-          observer.observe @radios[0], configObserver
+          for radio in @radios
+            observer.observe radio, configObserver
 
         # Init
         _SPL.onToggle.call @
