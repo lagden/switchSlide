@@ -120,10 +120,10 @@ It is a plugin that show `radios buttons` like switch slide
 
         docBody.appendChild clone
 
-        widget = clone.querySelector options.selectors.widget
-        sMin   = widget.querySelector options.selectors.optMin
-        sMax   = widget.querySelector options.selectors.optMax
-        knob   = widget.querySelector options.selectors.knob
+        widget = clone.querySelector options.widget
+        sMin   = widget.querySelector options.optMin
+        sMax   = widget.querySelector options.optMax
+        knob   = widget.querySelector options.knob
 
         sizes =
           'sMin': sMin.clientWidth
@@ -255,10 +255,10 @@ It is a plugin that show `radios buttons` like switch slide
 
       # Get Elements
       getElements: ->
-        @widget = @container.querySelector @options.selectors.widget
-        @sMin   = @widget.querySelector @options.selectors.optMax
-        @sMax   = @widget.querySelector @options.selectors.optMin
-        @knob   = @widget.querySelector @options.selectors.knob
+        @widget = @container.querySelector @options.widget
+        @sMin   = @widget.querySelector @options.optMax
+        @sMax   = @widget.querySelector @options.optMin
+        @knob   = @widget.querySelector @options.knob
         return
 
       # Set Widths
@@ -287,6 +287,14 @@ It is a plugin that show `radios buttons` like switch slide
       unchecked: (radio) ->
         radio.removeAttribute 'checked'
         radio.checked = false
+        return
+
+      # Observer
+      observer: (radio) ->
+        has = classie.has radio, @options.errorClass
+        method = if has then 'add' else 'remove'
+        console.log radio, @options.errorClass, method
+        classie[method] @widget, @options.errorClass
         return
 
       # Build
@@ -340,7 +348,7 @@ It is a plugin that show `radios buttons` like switch slide
           pancancel : _SPL.onEnd.bind @
           keydown   : _SPL.onKeydown.bind @
 
-        # Hammer Manager
+        # Hammer Management
         @hammer = [
           {
             manager : new Hammer.Manager @tapElement
@@ -371,6 +379,22 @@ It is a plugin that show `radios buttons` like switch slide
             o.manager.on m, @events[m]
 
         @widget.addEventListener 'keydown', @events.keydown, true
+
+        # Observer
+        if 'MutationObserver' in root
+          that = @
+          observer = new MutationObserver (mutations) ->
+            mutations.forEach (mutation) ->
+              if mutation.attributeName == 'class'
+                _SPL.observer.apply that, [mutation.target]
+              return
+            return
+
+          configObserver =
+            attributes: true
+            attributeOldValue: true
+
+          observer.observe @radios[0], configObserver
 
         # Init
         _SPL.onToggle.call @
@@ -414,13 +438,14 @@ It is a plugin that show `radios buttons` like switch slide
             getDragElement : _SPL.getDragElement
             negative       : false
             swapOrder      : false
+            errorClass     : 'frm__err'
             initialize     : 'switchSlide--initialized'
-            selectors:
-              widget : '.widgetSlide'
-              opts   : '.widgetSlide__opt'
-              optMin : '.widgetSlide__opt--min'
-              optMax : '.widgetSlide__opt--max'
-              knob   : '.widgetSlide__knob'
+            # Selector
+            widget         : '.widgetSlide'
+            opts           : '.widgetSlide__opt'
+            optMin         : '.widgetSlide__opt--min'
+            optMax         : '.widgetSlide__opt--max'
+            knob           : '.widgetSlide__knob'
 
           extend @options, options
 

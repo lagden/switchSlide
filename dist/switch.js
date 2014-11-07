@@ -7,6 +7,8 @@ It is a plugin that show `radios buttons` like switch slide
 @author      Thiago Lagden <lagden [at] gmail.com>
 @copyright   Author
  */
+var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+
 (function(root, factory) {
   if (typeof define === 'function' && define.amd) {
     define(['get-style-property/get-style-property', 'classie/classie', 'eventEmitter/EventEmitter', 'hammerjs/hammer'], factory);
@@ -68,10 +70,10 @@ It is a plugin that show `radios buttons` like switch slide
         clone.style.visibility = 'hidden';
         clone.style.position = 'absolute';
         docBody.appendChild(clone);
-        widget = clone.querySelector(options.selectors.widget);
-        sMin = widget.querySelector(options.selectors.optMin);
-        sMax = widget.querySelector(options.selectors.optMax);
-        knob = widget.querySelector(options.selectors.knob);
+        widget = clone.querySelector(options.widget);
+        sMin = widget.querySelector(options.optMin);
+        sMax = widget.querySelector(options.optMax);
+        knob = widget.querySelector(options.knob);
         sizes = {
           'sMin': sMin.clientWidth,
           'sMax': sMax.clientWidth,
@@ -184,10 +186,10 @@ It is a plugin that show `radios buttons` like switch slide
         method = null;
       },
       getElements: function() {
-        this.widget = this.container.querySelector(this.options.selectors.widget);
-        this.sMin = this.widget.querySelector(this.options.selectors.optMax);
-        this.sMax = this.widget.querySelector(this.options.selectors.optMin);
-        this.knob = this.widget.querySelector(this.options.selectors.knob);
+        this.widget = this.container.querySelector(this.options.widget);
+        this.sMin = this.widget.querySelector(this.options.optMax);
+        this.sMax = this.widget.querySelector(this.options.optMin);
+        this.knob = this.widget.querySelector(this.options.knob);
       },
       setSizes: function() {
         this.sMin.style.width = "" + this.width + "px";
@@ -209,8 +211,15 @@ It is a plugin that show `radios buttons` like switch slide
         radio.removeAttribute('checked');
         radio.checked = false;
       },
+      observer: function(radio) {
+        var has, method;
+        has = classie.has(radio, this.options.errorClass);
+        method = has ? 'add' : 'remove';
+        console.log(radio, this.options.errorClass, method);
+        classie[method](this.widget, this.options.errorClass);
+      },
       build: function() {
-        var attrib, captionMax, captionMin, content, labels, m, o, r, value, _i, _j, _len, _len1, _ref, _ref1, _ref2;
+        var attrib, captionMax, captionMin, configObserver, content, labels, m, o, observer, r, that, value, _i, _j, _len, _len1, _ref, _ref1, _ref2;
         captionMin = captionMax = '';
         labels = this.container.getElementsByTagName('label');
         if (labels.length === 2) {
@@ -275,6 +284,21 @@ It is a plugin that show `radios buttons` like switch slide
           }
         }
         this.widget.addEventListener('keydown', this.events.keydown, true);
+        if (__indexOf.call(root, 'MutationObserver') >= 0) {
+          that = this;
+          observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+              if (mutation.attributeName === 'class') {
+                _SPL.observer.apply(that, [mutation.target]);
+              }
+            });
+          });
+          configObserver = {
+            attributes: true,
+            attributeOldValue: true
+          };
+          observer.observe(this.radios[0], configObserver);
+        }
         _SPL.onToggle.call(this);
       }
     };
@@ -309,14 +333,13 @@ It is a plugin that show `radios buttons` like switch slide
             getDragElement: _SPL.getDragElement,
             negative: false,
             swapOrder: false,
+            errorClass: 'frm__err',
             initialize: 'switchSlide--initialized',
-            selectors: {
-              widget: '.widgetSlide',
-              opts: '.widgetSlide__opt',
-              optMin: '.widgetSlide__opt--min',
-              optMax: '.widgetSlide__opt--max',
-              knob: '.widgetSlide__knob'
-            }
+            widget: '.widgetSlide',
+            opts: '.widgetSlide__opt',
+            optMin: '.widgetSlide__opt--min',
+            optMax: '.widgetSlide__opt--max',
+            knob: '.widgetSlide__knob'
           };
           extend(this.options, options);
           this.a = this.options.swapOrder ? 1 : 0;
