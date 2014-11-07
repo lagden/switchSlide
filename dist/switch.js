@@ -13,9 +13,9 @@ var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; 
   if (typeof define === 'function' && define.amd) {
     define(['get-style-property/get-style-property', 'classie/classie', 'eventEmitter/EventEmitter', 'hammerjs/hammer'], factory);
   } else {
-    root.SwitchSlide = factory(root.getStyleProperty, root.classie, root.EventEmitter, root.Hammer);
+    root.SwitchSlide = factory(root.getStyleProperty, root.classie, root.EventEmitter, root.Hammer, root);
   }
-})(this, function(getStyleProperty, classie, EventEmitter, Hammer) {
+})(this, function(getStyleProperty, classie, EventEmitter, Hammer, root) {
   'use strict';
   var GUID, SwitchSlide, SwitchSlideException, docBody, extend, instances, isElement, removeAllChildren, transformProperty;
   docBody = document.querySelector('body');

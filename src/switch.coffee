@@ -19,9 +19,10 @@ It is a plugin that show `radios buttons` like switch slide
     root.SwitchSlide = factory root.getStyleProperty,
                                root.classie,
                                root.EventEmitter,
-                               root.Hammer
+                               root.Hammer,
+                               root
   return
-) @, (getStyleProperty, classie, EventEmitter, Hammer) ->
+) @, (getStyleProperty, classie, EventEmitter, Hammer, root) ->
 
   'use strict'
 
