@@ -3,7 +3,7 @@
   "title": "Slide Switch",
   "description": "It is a plugin that show radios buttons like slide switch",
   "main": "./dist/switch.js",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "author": "Thiago Lagden <lagden@gmail.com>",
   "repository": {
     "type": "git",

@@ -15,15 +15,14 @@ It is a plugin that show `radios buttons` like switch slide
       'eventEmitter/EventEmitter'
       'hammerjs/hammer'
     ], (getStyleProperty, classie, EventEmitter, Hammer) ->
-      return factory(getStyleProperty, classie, EventEmitter, Hammer, root)
+      return factory(getStyleProperty, classie, EventEmitter, Hammer)
   else
     root.SwitchSlide = factory root.getStyleProperty,
                                root.classie,
                                root.EventEmitter,
-                               root.Hammer,
-                               root
+                               root.Hammer
   return
-) @, (getStyleProperty, classie, EventEmitter, Hammer, root) ->
+) @, (getStyleProperty, classie, EventEmitter, Hammer) ->
 
   'use strict'
 
@@ -78,6 +77,7 @@ It is a plugin that show `radios buttons` like switch slide
   # @b
   # @radios
   # @width
+  # @margin
   # @shift
   # @valor
   # @active
@@ -127,10 +127,15 @@ It is a plugin that show `radios buttons` like switch slide
         sMax   = widget.querySelector options.optMax
         knob   = widget.querySelector options.knob
 
+        knobComputedStyle = window.getComputedStyle knob
+        knobMarLeft  = parseInt knobComputedStyle.marginLeft, 10
+        knobMarRight = parseInt knobComputedStyle.marginRight, 10
+
         sizes =
           'sMin': sMin.clientWidth
           'sMax': sMax.clientWidth
           'knob': knob.clientWidth
+          'margin': knobMarLeft + knobMarRight
           'max' : Math.max sMin.clientWidth, sMax.clientWidth
 
         # Remove
@@ -268,7 +273,7 @@ It is a plugin that show `radios buttons` like switch slide
       setSizes: ->
         @sMin.style.width = "#{@width}px"
         @sMax.style.width = "#{@width}px"
-        @knob.style.width = "#{@width}px"
+        @knob.style.width = "#{@width - @margin}px"
         @container.style.width = (@width * 2)  + 'px'
         return
 
@@ -332,6 +337,7 @@ It is a plugin that show `radios buttons` like switch slide
         # Size
         @sizes = _SPL.getSizes @container, @options
         @width = @sizes.max
+        @margin = @sizes.margin
         @options.setSizes.call @
 
         # WAI-ARIA
@@ -383,7 +389,7 @@ It is a plugin that show `radios buttons` like switch slide
         @widget.addEventListener 'keydown', @events.keydown, true
 
         # Observer
-        hasMutation = `'MutationObserver' in root`
+        hasMutation = `'MutationObserver' in window`
         if hasMutation
           that = @
           observer = new MutationObserver (mutations) ->
@@ -472,6 +478,7 @@ It is a plugin that show `radios buttons` like switch slide
 
             # Width
             @width = 0
+            @margin = 0
 
             # on, off or null
             @shift = null
@@ -602,6 +609,7 @@ It is a plugin that show `radios buttons` like switch slide
         @b                 =
         @radios            =
         @width             =
+        @margin            =
         @shift             =
         @valor             =
         @active            =

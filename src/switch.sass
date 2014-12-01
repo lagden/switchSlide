@@ -73,6 +73,7 @@
             padding: 3px 6px
 
         > .widgetSlide__knob
+            $margin: 2
             position: absolute
             z-index: 1
 
@@ -82,11 +83,13 @@
             left: 0
 
             width: auto
-            height: 100%
+            height: calc(100% - #{$margin * 2}px)
 
             background: linear-gradient(rgb(246, 248, 249) 0%, rgb(229, 235, 238) 50%, rgb(215, 222, 227) 51%, rgb(245, 247, 249) 100%)
 
-            border: 2px solid rgb(51, 51, 51)
+            margin: #{$margin}px
+
+            // border: 2px solid rgb(51, 51, 51)
             border-radius: 5px
             box-sizing: border-box
             opacity: 0
