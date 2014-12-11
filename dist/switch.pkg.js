@@ -3024,15 +3024,18 @@ It is a plugin that show `radios buttons` like switch slide
         return sizes;
       },
       onToggle: function() {
-        var a, b, radio, width, _i, _j, _len, _len1, _ref, _ref1;
+        var a, b, c, d, opts, radio, width, _i, _j, _len, _len1, _ref, _ref1;
         width = this.options.negative ? -this.width : this.width;
         if (this.shift !== null) {
           this.active = true;
           this.transform.translate.x = this.shift ? width : 0;
+          opts = [this.sMin, this.sMax];
           a = this.shift ? this.b : this.a;
           b = a ^ 1;
-          _SPL.checked(this.radios[a]);
-          _SPL.unchecked(this.radios[b]);
+          c = this.options.swapOrder ? a : b;
+          d = c ^ 1;
+          _SPL.checked(this.radios[a], opts[c]);
+          _SPL.unchecked(this.radios[b], opts[d]);
         } else {
           this.active = false;
           this.transform.translate.x = width / 2;
@@ -3142,13 +3145,19 @@ It is a plugin that show `radios buttons` like switch slide
       getDragElement: function() {
         return this.knob;
       },
-      checked: function(radio) {
+      checked: function(radio, opt) {
         radio.setAttribute('checked', '');
         radio.checked = true;
+        if (opt != null) {
+          classie.add(opt, 'selected');
+        }
       },
-      unchecked: function(radio) {
+      unchecked: function(radio, opt) {
         radio.removeAttribute('checked');
         radio.checked = false;
+        if (opt != null) {
+          classie.remove(opt, 'selected');
+        }
       },
       observer: function(radio) {
         var has, method;
@@ -3325,8 +3334,8 @@ It is a plugin that show `radios buttons` like switch slide
             this.aria = {
               'tabindex': 0,
               'role': 'slider',
-              'aria-valuemin': this.radios[this.a].title,
-              'aria-valuemax': this.radios[this.b].title,
+              'aria-valuemin': this.radios[this.a].value,
+              'aria-valuemax': this.radios[this.b].value,
               'aria-valuetext': null,
               'aria-valuenow': null,
               'aria-labeledby': this.options.labeledby,
@@ -3371,7 +3380,7 @@ It is a plugin that show `radios buttons` like switch slide
       var v;
       if (this.shift !== null) {
         v = this.shift === true ? this.radios[this.b].title : this.radios[this.a].title;
-        this.widget.setAttribute('aria-valuenow', v);
+        this.widget.setAttribute('aria-valuenow', this.valor);
         this.widget.setAttribute('aria-valuetext', v);
       }
       v = null;

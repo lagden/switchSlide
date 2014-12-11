@@ -158,11 +158,19 @@ It is a plugin that show `radios buttons` like switch slide
           @active = true
           @transform.translate.x = if @shift then width else 0
 
+          opts = [
+            @sMin
+            @sMax
+          ]
+
           a = if @shift then @b else @a
           b = a ^ 1
 
-          _SPL.checked @radios[a]
-          _SPL.unchecked @radios[b]
+          c = if @options.swapOrder then a else b
+          d = c ^ 1
+
+          _SPL.checked @radios[a], opts[c]
+          _SPL.unchecked @radios[b], opts[d]
 
         else
           @active = false
@@ -286,15 +294,19 @@ It is a plugin that show `radios buttons` like switch slide
         return @knob
 
       # Radio checked
-      checked: (radio) ->
+      checked: (radio, opt) ->
         radio.setAttribute 'checked', ''
         radio.checked = true
+        if opt?
+          classie.add opt, 'selected'
         return
 
       # Radio unchecked
-      unchecked: (radio) ->
+      unchecked: (radio, opt) ->
         radio.removeAttribute 'checked'
         radio.checked = false
+        if opt?
+          classie.remove opt, 'selected'
         return
 
       # Observer
@@ -507,8 +519,8 @@ It is a plugin that show `radios buttons` like switch slide
             @aria =
               'tabindex'       : 0
               'role'           : 'slider'
-              'aria-valuemin'  : @radios[@a].title
-              'aria-valuemax'  : @radios[@b].title
+              'aria-valuemin'  : @radios[@a].value
+              'aria-valuemax'  : @radios[@b].value
               'aria-valuetext' : null
               'aria-valuenow'  : null
               'aria-labeledby' : @options.labeledby
@@ -556,7 +568,7 @@ It is a plugin that show `radios buttons` like switch slide
     updateAria: ->
       if @shift isnt null
         v = if @shift is on then @radios[@b].title else @radios[@a].title
-        @widget.setAttribute 'aria-valuenow', v
+        @widget.setAttribute 'aria-valuenow', @valor
         @widget.setAttribute 'aria-valuetext', v
       v = null
       return

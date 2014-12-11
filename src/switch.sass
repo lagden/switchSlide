@@ -22,7 +22,6 @@
 
         font-family: Consolas, 'Liberation Mono', Courier, monospace
         font-size: 1em
-        color: rgb(99, 99, 99)
 
         border-radius: 5px
         box-shadow: rgba(0, 0, 0, 0.5) 0px 1px 1px inset, rgba(255, 255, 255, 0.2) 0px 1px 0px
@@ -71,6 +70,10 @@
             text-align: center
             box-sizing: content-box
             padding: 3px 6px
+            color: rgba(255, 255, 255, 0.7)
+            transition: color 0.3s
+            &.selected
+                color: rgba(0, 0, 0, 0.7)
 
         > .widgetSlide__knob
             $margin: 2
