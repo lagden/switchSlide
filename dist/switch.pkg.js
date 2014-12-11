@@ -3024,12 +3024,12 @@ It is a plugin that show `radios buttons` like switch slide
         return sizes;
       },
       onToggle: function() {
-        var a, b, c, d, opts, radio, width, _i, _j, _len, _len1, _ref, _ref1;
+        var a, b, c, d, num, opts, radio, width, _i, _j, _len, _ref;
         width = this.options.negative ? -this.width : this.width;
+        opts = [this.sMin, this.sMax];
         if (this.shift !== null) {
           this.active = true;
           this.transform.translate.x = this.shift ? width : 0;
-          opts = [this.sMin, this.sMax];
           a = this.shift ? this.b : this.a;
           b = a ^ 1;
           c = this.options.swapOrder ? a : b;
@@ -3039,10 +3039,8 @@ It is a plugin that show `radios buttons` like switch slide
         } else {
           this.active = false;
           this.transform.translate.x = width / 2;
-          _ref = this.radios;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            radio = _ref[_i];
-            _SPL.unchecked(radio);
+          for (num = _i = 0; _i <= 1; num = ++_i) {
+            _SPL.unchecked(this.radios[num], opts[num]);
           }
         }
         _SPL.isActive.call(this);
@@ -3050,9 +3048,9 @@ It is a plugin that show `radios buttons` like switch slide
         this.updateValor();
         this.updatePosition();
         this.emitToggle();
-        _ref1 = this.radios;
-        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-          radio = _ref1[_j];
+        _ref = this.radios;
+        for (_j = 0, _len = _ref.length; _j < _len; _j++) {
+          radio = _ref[_j];
           if (!radio.checked) {
             continue;
           }

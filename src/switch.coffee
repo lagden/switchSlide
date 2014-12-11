@@ -153,15 +153,14 @@ It is a plugin that show `radios buttons` like switch slide
       #
       onToggle: ->
         width = if @options.negative then -@width else @width
+        opts = [
+          @sMin
+          @sMax
+        ]
 
         if @shift isnt null
           @active = true
           @transform.translate.x = if @shift then width else 0
-
-          opts = [
-            @sMin
-            @sMax
-          ]
 
           a = if @shift then @b else @a
           b = a ^ 1
@@ -175,7 +174,7 @@ It is a plugin that show `radios buttons` like switch slide
         else
           @active = false
           @transform.translate.x = width / 2
-          _SPL.unchecked radio for radio in @radios
+          _SPL.unchecked @radios[num], opts[num] for num in [0..1]
 
         _SPL.isActive.call @
 
