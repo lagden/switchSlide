@@ -2,7 +2,7 @@
   "name": "switch-slider",
   "title": "Slide Switch",
   "description": "It is a plugin that show radios buttons like slide switch",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "author": "Thiago Lagden",
   "keyword": [
     "custom",
@@ -27,7 +27,7 @@
   "dependencies": {
     "hammerjs": "~2.0.2",
     "get-style-property": "desandro/get-style-property#~1.0.3",
-    "eventEmitter": "~4.2.8",
+    "eventEmitter": "~4.2.11",
     "classie": "~1.0.1"
   }
 }
