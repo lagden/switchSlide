@@ -84,6 +84,14 @@ try {
 }
 ```
 
+## Unlicense
+
+This project used to be released under MIT, but I release everything under the [Unlicense][] now. Here's the gist of it but you can find the full thing in the `UNLICENSE` file.
+
+>This is free and unencumbered software released into the public domain.
+>
+>Anyone is free to copy, modify, publish, use, compile, sell, or distribute this software, either in source code form or as a compiled binary, for any purpose, commercial or non-commercial, and by any means.
+
 ## Author
 
 [Thiago Lagden](http://lagden.in)
