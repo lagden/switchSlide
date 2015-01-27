@@ -83,4 +83,4 @@ sr = SwitchSlide(el, {
 
 [Thiago Lagden](https://github.com/lagden)
 
-::beers::
+:beers:
