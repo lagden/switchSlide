@@ -36,10 +36,10 @@
       <div class="mar-b-20">
         <div id="labelSwitch" class="label">Você achou esse switch bacana?</div>
         <div class="switchSlide">
-          <label for="sim">Sim</label>
-          <input id="sim" type="radio" title="Sim" name="switch" value="S" checked>
           <label for="nao">Não</label>
           <input id="nao" type="radio" title="Não" name="switch" value="N">
+          <label for="sim">Sim</label>
+          <input id="sim" type="radio" title="Sim" name="switch" value="S" checked>
         </div>
       </div>
       <button type="submit">OK</button>
@@ -58,7 +58,7 @@
       
       // Default
       try {
-          sl = SwitchSlide('.switchSlide', {swapOrder: true});
+          sl = SwitchSlide('.switchSlide');
           cacheSwitches.push(sl);
       } catch (e) {
           console.error('sl', e.message, e.name);

@@ -14,8 +14,7 @@ It is a plugin that show `radios buttons` like switch slide
       'classie/classie'
       'eventEmitter/EventEmitter'
       'hammerjs/hammer'
-    ], (getStyleProperty, classie, EventEmitter, Hammer) ->
-      return factory(getStyleProperty, classie, EventEmitter, Hammer)
+    ], factory
   else
     root.SwitchSlide = factory root.getStyleProperty,
                                root.classie,
@@ -81,7 +80,7 @@ It is a plugin that show `radios buttons` like switch slide
   # @shift
   # @valor
   # @active
-  # @transform
+  # @transformTranslateX
   # @keyCodes
   # @aria
   # @eventToggleParams
@@ -104,28 +103,28 @@ It is a plugin that show `radios buttons` like switch slide
       # Template
       getTemplate: ->
         return '
-          <div class="widgetSlide">
-            <div class="widgetSlide__opt widgetSlide__opt--min">
+          <div class="{widget}">
+            <div class="{opts} {optMin}">
               <span>{captionMin}</span>
             </div>
-            <div class="widgetSlide__knob"></div>
-            <div class="widgetSlide__opt widgetSlide__opt--max">
+            <div class="{knob}"></div>
+            <div class="{opts} {optMax}">
               <span>{captionMax}</span>
             </div>
-          </div>'
+          </div>'.trim()
 
       # Size of elements
-      getSizes: (container, options) ->
+      getSizes: (container, css) ->
         clone = container.cloneNode true
         clone.style.visibility = 'hidden'
         clone.style.position   = 'absolute'
 
         docBody.appendChild clone
 
-        widget = clone.querySelector options.widget
-        sMin   = widget.querySelector options.optMin
-        sMax   = widget.querySelector options.optMax
-        knob   = widget.querySelector options.knob
+        widget = clone.querySelector ".#{css.widget}"
+        sMin   = widget.querySelector ".#{css.optMin}"
+        sMax   = widget.querySelector ".#{css.optMax}"
+        knob   = widget.querySelector ".#{css.knob}"
 
         knobComputedStyle = window.getComputedStyle knob
         knobMarLeft  = parseInt knobComputedStyle.marginLeft, 10
@@ -160,7 +159,7 @@ It is a plugin that show `radios buttons` like switch slide
 
         if @shift isnt null
           @active = true
-          @transform.translate.x = if @shift then width else 0
+          @transformTranslateX = if @shift then width else 0
 
           a = if @shift then @b else @a
           b = a ^ 1
@@ -173,7 +172,7 @@ It is a plugin that show `radios buttons` like switch slide
 
         else
           @active = false
-          @transform.translate.x = width / 2
+          @transformTranslateX = width / 2
           _SPL.unchecked @radios[num], opts[num] for num in [0..1]
 
         _SPL.isActive.call @
@@ -205,9 +204,9 @@ It is a plugin that show `radios buttons` like switch slide
           v = if @shift then width + event.deltaX else event.deltaX
 
         if @options.negative
-          @transform.translate.x = Math.min 0, Math.max width, v
+          @transformTranslateX = Math.min 0, Math.max width, v
         else
-          @transform.translate.x = Math.min width, Math.max v, 0
+          @transformTranslateX = Math.min width, Math.max v, 0
 
         @updatePosition()
 
@@ -216,7 +215,7 @@ It is a plugin that show `radios buttons` like switch slide
         return
 
       onEnd: (event) ->
-        @shift = Math.abs(@transform.translate.x) > (@width / 2)
+        @shift = Math.abs(@transformTranslateX) > (@width / 2)
         classie.remove @dragElement, 'is-dragging'
         _SPL.onToggle.call @
         return
@@ -270,10 +269,10 @@ It is a plugin that show `radios buttons` like switch slide
 
       # Get Elements
       getElements: ->
-        @widget = @container.querySelector @options.widget
-        @sMin   = @widget.querySelector @options.optMax
-        @sMax   = @widget.querySelector @options.optMin
-        @knob   = @widget.querySelector @options.knob
+        @widget = @container.querySelector ".#{@css.widget}"
+        @sMin   = @widget.querySelector ".#{@css.optMax}"
+        @sMax   = @widget.querySelector ".#{@css.optMin}"
+        @knob   = @widget.querySelector ".#{@css.knob}"
         return
 
       # Set Widths
@@ -331,6 +330,11 @@ It is a plugin that show `radios buttons` like switch slide
         r =
           'captionMin' : captionMin
           'captionMax' : captionMax
+          'widget'     : @options.widget
+          'opts'       : @options.opts
+          'optMin'     : @options.optMin
+          'optMax'     : @options.optMax
+          'knob'       : @options.knob
 
         content = @options.template().replace /\{(.*?)\}/g, (a, b) ->
           return r[b]
@@ -346,8 +350,8 @@ It is a plugin that show `radios buttons` like switch slide
         @options.getElements.call @
 
         # Size
-        @sizes = _SPL.getSizes @container, @options
-        @width = @sizes.max
+        @sizes  = _SPL.getSizes @container, @css
+        @width  = @sizes.max
         @margin = @sizes.margin
         @options.setSizes.call @
 
@@ -460,15 +464,25 @@ It is a plugin that show `radios buttons` like switch slide
             negative       : false
             swapOrder      : false
             errorClass     : 'frm__err'
-            initialize     : 'switchSlide--initialized'
-            # Selector
-            widget         : '.widgetSlide'
-            opts           : '.widgetSlide__opt'
-            optMin         : '.widgetSlide__opt--min'
-            optMax         : '.widgetSlide__opt--max'
-            knob           : '.widgetSlide__knob'
+            initialize     : ''
+            widget         : ''
+            opts           : ''
+            optMin         : ''
+            optMax         : ''
+            knob           : ''
 
           extend @options, options
+
+          @css =
+            initialize : 'switchSlide--initialized'
+            widget     : 'widgetSlide'
+            opts       : 'widgetSlide__opt'
+            optMin     : 'widgetSlide__opt--min'
+            optMax     : 'widgetSlide__opt--max'
+            knob       : 'widgetSlide__knob'
+
+          for k, v of @css
+            @options[k] = "#{v} #{@options[k]}".trim()
 
           # Order
           @a = if @options.swapOrder then 1 else 0
@@ -485,7 +499,8 @@ It is a plugin that show `radios buttons` like switch slide
             throw new SwitchSlideException '✖ No radios'
           else
             # Initialize
-            classie.add @container, @options.initialize
+            for css in @options.initialize.split(' ')
+              classie.add @container, css
 
             # Width
             @width = 0
@@ -504,9 +519,7 @@ It is a plugin that show `radios buttons` like switch slide
             @active = null
 
             # Animation
-            @transform =
-              translate:
-                x: 0
+            @transformTranslateX = 0
 
             # Keyboard
             @keyCodes =
@@ -584,7 +597,7 @@ It is a plugin that show `radios buttons` like switch slide
 
     # Update position
     updatePosition: ->
-      value = ["translate3d(#{@transform.translate.x}px, 0, 0)"]
+      value = ["translate3d(#{@transformTranslateX}px, 0, 0)"]
       @dragElement.style[transformProperty] = value.join " "
       value = null
       return
@@ -607,37 +620,38 @@ It is a plugin that show `radios buttons` like switch slide
           @container.removeChild @widget
 
         # Remove classes and attributes
-        classie.remove @container, @options.initialize
+        for css in @options.initialize.split(' ')
+          classie.remove @container, css
         @container.removeAttribute 'style'
 
         # Remove reference
         @container.GUID = null
 
         # Nullable
-        @container         =
-        @options           =
-        @a                 =
-        @b                 =
-        @radios            =
-        @width             =
-        @margin            =
-        @shift             =
-        @valor             =
-        @active            =
-        @transform         =
-        @keyCodes          =
-        @aria              =
-        @eventToggleParams =
-        @eventChange       =
-        @widget            =
-        @sMin              =
-        @sMax              =
-        @knob              =
-        @sizes             =
-        @tapElement        =
-        @dragElement       =
-        @events            =
-        @hammer            = null
+        @container           =
+        @options             =
+        @a                   =
+        @b                   =
+        @radios              =
+        @width               =
+        @margin              =
+        @shift               =
+        @valor               =
+        @active              =
+        @transformTranslateX =
+        @keyCodes            =
+        @aria                =
+        @eventToggleParams   =
+        @eventChange         =
+        @widget              =
+        @sMin                =
+        @sMax                =
+        @knob                =
+        @sizes               =
+        @tapElement          =
+        @dragElement         =
+        @events              =
+        @hammer              = null
       return
 
   # Extends

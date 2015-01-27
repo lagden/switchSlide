@@ -33,10 +33,10 @@ html(lang='en')
             .mar-b-20
                 #labelSwitch.label Você achou esse switch bacana?
                 .switchSlide
-                    label(for='sim') Sim
-                    input#sim(type='radio', title='Sim', name='switch', value='S', checked)
                     label(for='nao') Não
                     input#nao(type='radio', title='Não', name='switch', value='N')
+                    label(for='sim') Sim
+                    input#sim(type='radio', title='Sim', name='switch', value='S', checked)
 
             button(type='submit') OK
             button(type='reset') Reset
@@ -54,7 +54,7 @@ html(lang='en')
 
             // Default
             try {
-                sl = SwitchSlide('.switchSlide', {swapOrder: true});
+                sl = SwitchSlide('.switchSlide');
                 cacheSwitches.push(sl);
             } catch (e) {
                 console.error('sl', e.message, e.name);

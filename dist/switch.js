@@ -9,9 +9,7 @@ It is a plugin that show `radios buttons` like switch slide
  */
 (function(root, factory) {
   if (typeof define === 'function' && define.amd) {
-    define(['get-style-property/get-style-property', 'classie/classie', 'eventEmitter/EventEmitter', 'hammerjs/hammer'], function(getStyleProperty, classie, EventEmitter, Hammer) {
-      return factory(getStyleProperty, classie, EventEmitter, Hammer);
-    });
+    define(['get-style-property/get-style-property', 'classie/classie', 'eventEmitter/EventEmitter', 'hammerjs/hammer'], factory);
   } else {
     root.SwitchSlide = factory(root.getStyleProperty, root.classie, root.EventEmitter, root.Hammer);
   }
@@ -62,18 +60,18 @@ It is a plugin that show `radios buttons` like switch slide
 
     _SPL = {
       getTemplate: function() {
-        return '<div class="widgetSlide"> <div class="widgetSlide__opt widgetSlide__opt--min"> <span>{captionMin}</span> </div> <div class="widgetSlide__knob"></div> <div class="widgetSlide__opt widgetSlide__opt--max"> <span>{captionMax}</span> </div> </div>';
+        return '<div class="{widget}"> <div class="{opts} {optMin}"> <span>{captionMin}</span> </div> <div class="{knob}"></div> <div class="{opts} {optMax}"> <span>{captionMax}</span> </div> </div>'.trim();
       },
-      getSizes: function(container, options) {
+      getSizes: function(container, css) {
         var clone, knob, knobComputedStyle, knobMarLeft, knobMarRight, sMax, sMin, sizes, widget;
         clone = container.cloneNode(true);
         clone.style.visibility = 'hidden';
         clone.style.position = 'absolute';
         docBody.appendChild(clone);
-        widget = clone.querySelector(options.widget);
-        sMin = widget.querySelector(options.optMin);
-        sMax = widget.querySelector(options.optMax);
-        knob = widget.querySelector(options.knob);
+        widget = clone.querySelector("." + css.widget);
+        sMin = widget.querySelector("." + css.optMin);
+        sMax = widget.querySelector("." + css.optMax);
+        knob = widget.querySelector("." + css.knob);
         knobComputedStyle = window.getComputedStyle(knob);
         knobMarLeft = parseInt(knobComputedStyle.marginLeft, 10);
         knobMarRight = parseInt(knobComputedStyle.marginRight, 10);
@@ -98,7 +96,7 @@ It is a plugin that show `radios buttons` like switch slide
         opts = [this.sMin, this.sMax];
         if (this.shift !== null) {
           this.active = true;
-          this.transform.translate.x = this.shift ? width : 0;
+          this.transformTranslateX = this.shift ? width : 0;
           a = this.shift ? this.b : this.a;
           b = a ^ 1;
           c = this.options.swapOrder ? a : b;
@@ -107,7 +105,7 @@ It is a plugin that show `radios buttons` like switch slide
           _SPL.unchecked(this.radios[b], opts[d]);
         } else {
           this.active = false;
-          this.transform.translate.x = width / 2;
+          this.transformTranslateX = width / 2;
           for (num = _i = 0; _i <= 1; num = ++_i) {
             _SPL.unchecked(this.radios[num], opts[num]);
           }
@@ -140,15 +138,15 @@ It is a plugin that show `radios buttons` like switch slide
           v = this.shift ? width + event.deltaX : event.deltaX;
         }
         if (this.options.negative) {
-          this.transform.translate.x = Math.min(0, Math.max(width, v));
+          this.transformTranslateX = Math.min(0, Math.max(width, v));
         } else {
-          this.transform.translate.x = Math.min(width, Math.max(v, 0));
+          this.transformTranslateX = Math.min(width, Math.max(v, 0));
         }
         this.updatePosition();
         width = v = null;
       },
       onEnd: function(event) {
-        this.shift = Math.abs(this.transform.translate.x) > (this.width / 2);
+        this.shift = Math.abs(this.transformTranslateX) > (this.width / 2);
         classie.remove(this.dragElement, 'is-dragging');
         _SPL.onToggle.call(this);
       },
@@ -195,10 +193,10 @@ It is a plugin that show `radios buttons` like switch slide
         }
       },
       getElements: function() {
-        this.widget = this.container.querySelector(this.options.widget);
-        this.sMin = this.widget.querySelector(this.options.optMax);
-        this.sMax = this.widget.querySelector(this.options.optMin);
-        this.knob = this.widget.querySelector(this.options.knob);
+        this.widget = this.container.querySelector("." + this.css.widget);
+        this.sMin = this.widget.querySelector("." + this.css.optMax);
+        this.sMax = this.widget.querySelector("." + this.css.optMin);
+        this.knob = this.widget.querySelector("." + this.css.knob);
       },
       setSizes: function() {
         this.sMin.style.width = "" + this.width + "px";
@@ -244,7 +242,12 @@ It is a plugin that show `radios buttons` like switch slide
         }
         r = {
           'captionMin': captionMin,
-          'captionMax': captionMax
+          'captionMax': captionMax,
+          'widget': this.options.widget,
+          'opts': this.options.opts,
+          'optMin': this.options.optMin,
+          'optMax': this.options.optMax,
+          'knob': this.options.knob
         };
         content = this.options.template().replace(/\{(.*?)\}/g, function(a, b) {
           return r[b];
@@ -252,7 +255,7 @@ It is a plugin that show `radios buttons` like switch slide
         this.container.insertAdjacentHTML('afterbegin', content);
         labels = captionMin = captionMax = content = null;
         this.options.getElements.call(this);
-        this.sizes = _SPL.getSizes(this.container, this.options);
+        this.sizes = _SPL.getSizes(this.container, this.css);
         this.width = this.sizes.max;
         this.margin = this.sizes.margin;
         this.options.setSizes.call(this);
@@ -324,7 +327,7 @@ It is a plugin that show `radios buttons` like switch slide
     };
 
     function SwitchSlide(container, options) {
-      var id, idx, initialized, radio, radios, _i, _len;
+      var css, id, idx, initialized, k, radio, radios, v, _i, _j, _len, _len1, _ref, _ref1;
       if (false === (this instanceof SwitchSlide)) {
         return new SwitchSlide(container, options);
       }
@@ -354,14 +357,27 @@ It is a plugin that show `radios buttons` like switch slide
             negative: false,
             swapOrder: false,
             errorClass: 'frm__err',
-            initialize: 'switchSlide--initialized',
-            widget: '.widgetSlide',
-            opts: '.widgetSlide__opt',
-            optMin: '.widgetSlide__opt--min',
-            optMax: '.widgetSlide__opt--max',
-            knob: '.widgetSlide__knob'
+            initialize: '',
+            widget: '',
+            opts: '',
+            optMin: '',
+            optMax: '',
+            knob: ''
           };
           extend(this.options, options);
+          this.css = {
+            initialize: 'switchSlide--initialized',
+            widget: 'widgetSlide',
+            opts: 'widgetSlide__opt',
+            optMin: 'widgetSlide__opt--min',
+            optMax: 'widgetSlide__opt--max',
+            knob: 'widgetSlide__knob'
+          };
+          _ref = this.css;
+          for (k in _ref) {
+            v = _ref[k];
+            this.options[k] = ("" + v + " " + this.options[k]).trim();
+          }
           this.a = this.options.swapOrder ? 1 : 0;
           this.b = this.a ^ 1;
           this.radios = [];
@@ -375,7 +391,11 @@ It is a plugin that show `radios buttons` like switch slide
           if (this.radios.length !== 2) {
             throw new SwitchSlideException('✖ No radios');
           } else {
-            classie.add(this.container, this.options.initialize);
+            _ref1 = this.options.initialize.split(' ');
+            for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+              css = _ref1[_j];
+              classie.add(this.container, css);
+            }
             this.width = 0;
             this.margin = 0;
             this.shift = null;
@@ -388,11 +408,7 @@ It is a plugin that show `radios buttons` like switch slide
             this.valor = null;
             this.updateValor();
             this.active = null;
-            this.transform = {
-              translate: {
-                x: 0
-              }
-            };
+            this.transformTranslateX = 0;
             this.keyCodes = {
               'space': 32,
               'left': 37,
@@ -465,13 +481,13 @@ It is a plugin that show `radios buttons` like switch slide
 
     SwitchSlide.prototype.updatePosition = function() {
       var value;
-      value = ["translate3d(" + this.transform.translate.x + "px, 0, 0)"];
+      value = ["translate3d(" + this.transformTranslateX + "px, 0, 0)"];
       this.dragElement.style[transformProperty] = value.join(" ");
       value = null;
     };
 
     SwitchSlide.prototype.destroy = function() {
-      var o, _i, _len, _ref;
+      var css, o, _i, _j, _len, _len1, _ref, _ref1;
       if (this.container !== null) {
         _ref = this.hammer;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -483,10 +499,14 @@ It is a plugin that show `radios buttons` like switch slide
         if (this.container.contains(this.widget)) {
           this.container.removeChild(this.widget);
         }
-        classie.remove(this.container, this.options.initialize);
+        _ref1 = this.options.initialize.split(' ');
+        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+          css = _ref1[_j];
+          classie.remove(this.container, css);
+        }
         this.container.removeAttribute('style');
         this.container.GUID = null;
-        this.container = this.options = this.a = this.b = this.radios = this.width = this.margin = this.shift = this.valor = this.active = this.transform = this.keyCodes = this.aria = this.eventToggleParams = this.eventChange = this.widget = this.sMin = this.sMax = this.knob = this.sizes = this.tapElement = this.dragElement = this.events = this.hammer = null;
+        this.container = this.options = this.a = this.b = this.radios = this.width = this.margin = this.shift = this.valor = this.active = this.transformTranslateX = this.keyCodes = this.aria = this.eventToggleParams = this.eventChange = this.widget = this.sMin = this.sMax = this.knob = this.sizes = this.tapElement = this.dragElement = this.events = this.hammer = null;
       }
     };
 
