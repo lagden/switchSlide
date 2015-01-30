@@ -309,7 +309,7 @@ It is a plugin that show `radios buttons` like switch slide
 
       # Observer
       observer: (radio) ->
-        has = classie.has radio, @option.observerClass
+        has = classie.has radio, @options.observerClass
         method = if has then 'add' else 'remove'
         classie[method] @widget, @options.errorClass
         return
@@ -405,7 +405,7 @@ It is a plugin that show `radios buttons` like switch slide
 
         # Observer
         hasMutation = `'MutationObserver' in window`
-        if hasMutation AND @option.observerClass
+        if hasMutation and @options.observerClass
           that = @
           observer = new MutationObserver (mutations) ->
             mutations.forEach (mutation) ->
