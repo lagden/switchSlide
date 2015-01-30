@@ -54,7 +54,9 @@ html(lang='en')
 
             // Default
             try {
-                sl = SwitchSlide('.switchSlide');
+                sl = SwitchSlide('.switchSlide', {
+                    required: true
+                });
                 cacheSwitches.push(sl);
             } catch (e) {
                 console.error('sl', e.message, e.name);

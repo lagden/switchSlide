@@ -3305,7 +3305,7 @@ It is a plugin that show `radios buttons` like switch slide
       },
       observer: function(radio) {
         var has, method;
-        has = classie.has(radio, this.options.errorClass);
+        has = classie.has(radio, this.option.observerClass);
         method = has ? 'add' : 'remove';
         classie[method](this.widget, this.options.errorClass);
       },
@@ -3382,7 +3382,7 @@ It is a plugin that show `radios buttons` like switch slide
         }
         this.widget.addEventListener('keydown', this.events.keydown, true);
         hasMutation = 'MutationObserver' in window;
-        if (hasMutation) {
+        if (hasMutation(AND(this.option.observerClass))) {
           that = this;
           observer = new MutationObserver(function(mutations) {
             mutations.forEach(function(mutation) {
@@ -3435,7 +3435,8 @@ It is a plugin that show `radios buttons` like switch slide
             getDragElement: _SPL.getDragElement,
             negative: false,
             swapOrder: false,
-            errorClass: 'frm__err',
+            errorClass: 'widgetSlide_err',
+            observerClass: null,
             initialize: '',
             widget: '',
             opts: '',

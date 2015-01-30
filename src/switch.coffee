@@ -309,7 +309,7 @@ It is a plugin that show `radios buttons` like switch slide
 
       # Observer
       observer: (radio) ->
-        has = classie.has radio, @options.errorClass
+        has = classie.has radio, @option.observerClass
         method = if has then 'add' else 'remove'
         classie[method] @widget, @options.errorClass
         return
@@ -405,7 +405,7 @@ It is a plugin that show `radios buttons` like switch slide
 
         # Observer
         hasMutation = `'MutationObserver' in window`
-        if hasMutation
+        if hasMutation AND @option.observerClass
           that = @
           observer = new MutationObserver (mutations) ->
             mutations.forEach (mutation) ->
@@ -463,7 +463,8 @@ It is a plugin that show `radios buttons` like switch slide
             getDragElement : _SPL.getDragElement
             negative       : false
             swapOrder      : false
-            errorClass     : 'frm__err'
+            errorClass     : 'widgetSlide_err'
+            observerClass  : null
             initialize     : ''
             widget         : ''
             opts           : ''
@@ -492,6 +493,8 @@ It is a plugin that show `radios buttons` like switch slide
           @radios = []
           radios = @container.getElementsByTagName 'input'
           for radio, idx in radios when radio.type == 'radio'
+            # if @options.required
+            #   radio.setAttribute 'required', ''
             @radios.push radio
 
           # Exception
