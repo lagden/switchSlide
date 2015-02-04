@@ -573,6 +573,14 @@ It is a plugin that show `radios buttons` like switch slide
       _SPL.onToggle.call @
       return
 
+    # Set switch position via value
+    setByValue: (v = false) ->
+      return false if !v
+      @shift = off if @radios[@a].value == v
+      @shift = on  if @radios[@b].value == v
+      _SPL.onToggle.call @
+      return
+
     # Reset
     reset: ->
       @shift = null

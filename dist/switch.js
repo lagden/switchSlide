@@ -455,6 +455,22 @@ It is a plugin that show `radios buttons` like switch slide
       _SPL.onToggle.call(this);
     };
 
+    SwitchSlide.prototype.setByValue = function(v) {
+      if (v == null) {
+        v = false;
+      }
+      if (!v) {
+        return false;
+      }
+      if (this.radios[this.a].value === v) {
+        this.shift = false;
+      }
+      if (this.radios[this.b].value === v) {
+        this.shift = true;
+      }
+      _SPL.onToggle.call(this);
+    };
+
     SwitchSlide.prototype.reset = function() {
       this.shift = null;
       _SPL.onToggle.call(this);

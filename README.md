@@ -79,6 +79,30 @@ sr = SwitchSlide(el, {
 });
 ```
 
+## API
+
+### emitToggle
+
+Trigger toggle event.  
+You can use this for get initial values
+
+### swap
+
+Swap switch position via boolean value.  
+If the parameter is null or undefined, the component will function as a toggle
+
+### setByValue
+
+Set switch position via value
+
+### reset
+
+No one is checked
+
+### destroy
+
+Back to orginal
+
 ## Author
 
 [Thiago Lagden](https://github.com/lagden)
